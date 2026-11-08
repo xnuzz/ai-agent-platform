@@ -1,0 +1,5651 @@
+openapi: 3.0.3
+info:
+  title: Unified AI SaaS Platform API
+  version: 1.0.0
+  description: 'Central backend API. Contract source of truth: docs/API_CONTRACTS.md.'
+paths:
+  /api/v1/agent/suppression/check/:
+    post:
+      operationId: v1_agent_suppression_check_create
+      tags:
+      - agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuppressionCheckRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SuppressionCheckRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SuppressionCheckRequest'
+        required: true
+      security:
+      - AgentToken: []
+      responses:
+        '200':
+          description: '{"suppressed_emails": [...], "suppressed_phones": [...]}'
+  /api/v1/agent/tasks/{task_id}/:
+    get:
+      operationId: v1_agent_tasks_retrieve
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agent
+      security:
+      - AgentToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTask'
+          description: ''
+  /api/v1/agent/tasks/{task_id}/complete/:
+    post:
+      operationId: v1_agent_tasks_complete_create
+      parameters:
+      - in: header
+        name: X-Lease-Id
+        schema:
+          type: string
+        description: lease_id returned by claim
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompleteRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompleteRequestRequest'
+      security:
+      - AgentToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTask'
+          description: ''
+  /api/v1/agent/tasks/{task_id}/fail/:
+    post:
+      operationId: v1_agent_tasks_fail_create
+      parameters:
+      - in: header
+        name: X-Lease-Id
+        schema:
+          type: string
+        description: lease_id returned by claim
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FailRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FailRequestRequest'
+        required: true
+      security:
+      - AgentToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTask'
+          description: ''
+  /api/v1/agent/tasks/{task_id}/heartbeat/:
+    post:
+      operationId: v1_agent_tasks_heartbeat_create
+      parameters:
+      - in: header
+        name: X-Lease-Id
+        schema:
+          type: string
+        description: lease_id returned by claim
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequestRequest'
+      security:
+      - AgentToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeartbeatResponse'
+          description: ''
+  /api/v1/agent/tasks/{task_id}/results/:
+    post:
+      operationId: v1_agent_tasks_results_create
+      parameters:
+      - in: header
+        name: X-Lease-Id
+        schema:
+          type: string
+        description: lease_id returned by claim
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResultBundleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResultBundleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResultBundleRequest'
+        required: true
+      security:
+      - AgentToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultReport'
+          description: ''
+  /api/v1/agent/tasks/claim/:
+    post:
+      operationId: v1_agent_tasks_claim_create
+      tags:
+      - agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClaimRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClaimRequestRequest'
+        required: true
+      security:
+      - AgentToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+          description: ''
+  /api/v1/approvals/:
+    get:
+      operationId: v1_approvals_list
+      description: Approval Center. Decisions are human-only (JWT users with DEVELOPER+
+        role).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: requested_by_agent
+        schema:
+          type: string
+      - in: query
+        name: research_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - APPROVED
+          - CANCELLED
+          - CHANGES_REQUESTED
+          - PENDING
+          - REJECTED
+        description: |-
+          * `PENDING` - Pending
+          * `APPROVED` - Approved
+          * `REJECTED` - Rejected
+          * `CHANGES_REQUESTED` - Changes Requested
+          * `CANCELLED` - Cancelled
+      - in: query
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: target_type
+        schema:
+          type: string
+          enum:
+          - CAMPAIGN
+          - PROJECT_BRIEF
+          - SOFTWARE_IDEA
+        description: |-
+          * `SOFTWARE_IDEA` - Software Idea
+          * `PROJECT_BRIEF` - Project Brief
+          * `CAMPAIGN` - Campaign
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApprovalList'
+          description: ''
+  /api/v1/approvals/{id}/:
+    get:
+      operationId: v1_approvals_retrieve
+      description: Approval Center. Decisions are human-only (JWT users with DEVELOPER+
+        role).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this approval.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+          description: ''
+  /api/v1/approvals/{id}/decide/:
+    post:
+      operationId: v1_approvals_decide_create
+      description: Approval Center. Decisions are human-only (JWT users with DEVELOPER+
+        role).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this approval.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+          description: ''
+  /api/v1/audit-events/:
+    get:
+      operationId: v1_audit_events_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: actor_type
+        schema:
+          type: string
+          enum:
+          - AGENT
+          - SYSTEM
+          - USER
+        description: |-
+          * `USER` - User
+          * `AGENT` - Agent
+          * `SYSTEM` - System
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: target_type
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditEventList'
+          description: ''
+  /api/v1/audit-events/{id}/:
+    get:
+      operationId: v1_audit_events_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this audit event.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEvent'
+          description: ''
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      description: Create a user plus their first workspace (user becomes OWNER).
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/token/:
+    post:
+      operationId: v1_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/businesses/:
+    get:
+      operationId: v1_businesses_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: city
+        schema:
+          type: string
+      - in: query
+        name: country_code
+        schema:
+          type: string
+      - in: query
+        name: domain
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBusinessList'
+          description: ''
+  /api/v1/businesses/{id}/:
+    get:
+      operationId: v1_businesses_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this business.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+          description: ''
+  /api/v1/campaigns/:
+    get:
+      operationId: v1_campaigns_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: project_brief
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: research_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: software_idea
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: source
+        schema:
+          type: string
+          enum:
+          - LOCAL_LEADS
+          - MANUAL
+          - SAAS_RESEARCH
+        description: |-
+          * `SAAS_RESEARCH` - Agent 1
+          * `LOCAL_LEADS` - Agent 2
+          * `MANUAL` - Manual (user)
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - APPROVED
+          - CANCELLED
+          - CHANGES_REQUESTED
+          - COMPLETED
+          - DRAFT
+          - PAUSED
+          - REJECTED
+          - WAITING_FOR_APPROVAL
+        description: |-
+          * `DRAFT` - Draft
+          * `WAITING_FOR_APPROVAL` - Waiting For Approval
+          * `APPROVED` - Approved
+          * `CHANGES_REQUESTED` - Changes Requested
+          * `REJECTED` - Rejected
+          * `ACTIVE` - Active
+          * `PAUSED` - Paused
+          * `COMPLETED` - Completed
+          * `CANCELLED` - Cancelled
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCampaignList'
+          description: ''
+  /api/v1/campaigns/{id}/:
+    get:
+      operationId: v1_campaigns_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this campaign.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+    patch:
+      operationId: v1_campaigns_partial_update
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this campaign.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCampaignRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCampaignRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCampaignRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+  /api/v1/campaigns/{id}/cancel/:
+    post:
+      operationId: v1_campaigns_cancel_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this campaign.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+  /api/v1/campaigns/{id}/launch/:
+    post:
+      operationId: v1_campaigns_launch_create
+      description: APPROVED|PAUSED -> ACTIVE. Backend re-verifies gates and compliance
+        before each send.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this campaign.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+  /api/v1/campaigns/{id}/pause/:
+    post:
+      operationId: v1_campaigns_pause_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this campaign.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+  /api/v1/campaigns/{id}/submit/:
+    post:
+      operationId: v1_campaigns_submit_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this campaign.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+          description: ''
+  /api/v1/dashboard/summary/:
+    get:
+      operationId: v1_dashboard_summary_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Counts by status per entity for the workspace.
+  /api/v1/evidence/:
+    get:
+      operationId: v1_evidence_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: research_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: source_type
+        schema:
+          type: string
+          enum:
+          - API
+          - DIRECTORY
+          - DOCUMENT
+          - FORUM
+          - OTHER
+          - REVIEW
+          - SEARCH_RESULT
+          - SOCIAL
+          - WEBSITE_SCAN
+          - WEB_PAGE
+        description: |-
+          * `WEB_PAGE` - Web Page
+          * `SEARCH_RESULT` - Search Result
+          * `REVIEW` - Review
+          * `FORUM` - Forum
+          * `DIRECTORY` - Directory
+          * `SOCIAL` - Social
+          * `API` - Api
+          * `DOCUMENT` - Document
+          * `WEBSITE_SCAN` - Website Scan
+          * `OTHER` - Other
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEvidenceList'
+          description: ''
+  /api/v1/evidence/{id}/:
+    get:
+      operationId: v1_evidence_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this evidence.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evidence'
+          description: ''
+  /api/v1/integrations/:
+    get:
+      operationId: v1_integrations_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - CRM
+          - EMAIL
+          - LLM
+          - MAPS
+          - SEARCH
+        description: |-
+          * `EMAIL` - Email
+          * `LLM` - Llm
+          * `SEARCH` - Search
+          * `MAPS` - Maps
+          * `CRM` - Crm
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: provider
+        schema:
+          type: string
+          enum:
+          - ANTHROPIC
+          - GOOGLE_PLACES
+          - HUBSPOT
+          - OPENAI
+          - OTHER
+          - SERPAPI
+          - SMTP
+        description: |-
+          * `SMTP` - Smtp
+          * `ANTHROPIC` - Anthropic
+          * `OPENAI` - Openai
+          * `GOOGLE_PLACES` - Google Places
+          * `SERPAPI` - Serpapi
+          * `HUBSPOT` - Hubspot
+          * `OTHER` - Other
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - DISABLED
+          - ERROR
+        description: |-
+          * `ACTIVE` - Active
+          * `DISABLED` - Disabled
+          * `ERROR` - Error
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIntegrationList'
+          description: ''
+    post:
+      operationId: v1_integrations_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IntegrationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IntegrationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Integration'
+          description: ''
+  /api/v1/integrations/{id}/:
+    get:
+      operationId: v1_integrations_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this integration.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Integration'
+          description: ''
+    patch:
+      operationId: v1_integrations_partial_update
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this integration.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedIntegrationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedIntegrationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedIntegrationRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Integration'
+          description: ''
+    delete:
+      operationId: v1_integrations_destroy
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this integration.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/leads/:
+    get:
+      operationId: v1_leads_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: business
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: research_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: software_idea
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: source
+        schema:
+          type: string
+          enum:
+          - LOCAL_LEADS
+          - MANUAL
+          - SAAS_RESEARCH
+        description: |-
+          * `SAAS_RESEARCH` - Agent 1
+          * `LOCAL_LEADS` - Agent 2
+          * `MANUAL` - Manual (user)
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ARCHIVED
+          - CONTACTED
+          - DISQUALIFIED
+          - LOST
+          - NEW
+          - QUALIFIED
+          - REPLIED
+          - WON
+        description: |-
+          * `NEW` - New
+          * `QUALIFIED` - Qualified
+          * `DISQUALIFIED` - Disqualified
+          * `CONTACTED` - Contacted
+          * `REPLIED` - Replied
+          * `WON` - Won
+          * `LOST` - Lost
+          * `ARCHIVED` - Archived
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLeadList'
+          description: ''
+  /api/v1/leads/{id}/:
+    get:
+      operationId: v1_leads_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lead.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+          description: ''
+    patch:
+      operationId: v1_leads_partial_update
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lead.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLeadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLeadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLeadRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+          description: ''
+  /api/v1/leads/{id}/set-status/:
+    post:
+      operationId: v1_leads_set_status_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lead.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadStatusRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LeadStatusRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LeadStatusRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+          description: ''
+  /api/v1/members/:
+    get:
+      operationId: v1_members_list
+      description: Members of the current workspace. Writes require ADMIN.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMembershipList'
+          description: ''
+    post:
+      operationId: v1_members_create
+      description: Members of the current workspace. Writes require ADMIN.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+  /api/v1/members/{id}/:
+    patch:
+      operationId: v1_members_partial_update
+      description: Members of the current workspace. Writes require ADMIN.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this membership.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+    delete:
+      operationId: v1_members_destroy
+      description: Members of the current workspace. Writes require ADMIN.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this membership.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/opportunities/:
+    get:
+      operationId: v1_opportunities_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: industry
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: research_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - DISMISSED
+          - NEW
+          - SHORTLISTED
+        description: |-
+          * `NEW` - New
+          * `SHORTLISTED` - Shortlisted
+          * `DISMISSED` - Dismissed
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOpportunityList'
+          description: ''
+  /api/v1/opportunities/{id}/:
+    get:
+      operationId: v1_opportunities_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this opportunity.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opportunity'
+          description: ''
+  /api/v1/opportunities/{id}/set-status/:
+    post:
+      operationId: v1_opportunities_set_status_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this opportunity.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityStatusRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpportunityStatusRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpportunityStatusRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opportunity'
+          description: ''
+  /api/v1/outreach-messages/:
+    get:
+      operationId: v1_outreach_messages_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: campaign
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: lead
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - APPROVED
+          - CANCELLED
+          - DRAFT
+          - FAILED
+          - REJECTED
+          - SENDING
+          - SENT
+          - SUPPRESSED
+          - WAITING_FOR_APPROVAL
+        description: |-
+          * `DRAFT` - Draft
+          * `WAITING_FOR_APPROVAL` - Waiting For Approval
+          * `APPROVED` - Approved
+          * `REJECTED` - Rejected
+          * `SENDING` - Sending
+          * `SENT` - Sent
+          * `FAILED` - Failed
+          * `SUPPRESSED` - Suppressed
+          * `CANCELLED` - Cancelled
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOutreachMessageList'
+          description: ''
+  /api/v1/outreach-messages/{id}/:
+    get:
+      operationId: v1_outreach_messages_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this outreach message.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutreachMessage'
+          description: ''
+    patch:
+      operationId: v1_outreach_messages_partial_update
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this outreach message.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOutreachMessageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOutreachMessageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOutreachMessageRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutreachMessage'
+          description: ''
+  /api/v1/outreach-messages/{id}/cancel/:
+    post:
+      operationId: v1_outreach_messages_cancel_create
+      description: Exclude a message (allowed until it is sent).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this outreach message.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutreachMessage'
+          description: ''
+  /api/v1/project-briefs/:
+    get:
+      operationId: v1_project_briefs_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: lead
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: research_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - APPROVED
+          - ARCHIVED
+          - CHANGES_REQUESTED
+          - DRAFT
+          - REJECTED
+          - WAITING_FOR_APPROVAL
+        description: |-
+          * `DRAFT` - Draft
+          * `WAITING_FOR_APPROVAL` - Waiting For Approval
+          * `APPROVED` - Approved
+          * `CHANGES_REQUESTED` - Changes Requested
+          * `REJECTED` - Rejected
+          * `ARCHIVED` - Archived
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectBriefList'
+          description: ''
+  /api/v1/project-briefs/{id}/:
+    get:
+      operationId: v1_project_briefs_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project brief.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBrief'
+          description: ''
+    patch:
+      operationId: v1_project_briefs_partial_update
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project brief.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBriefRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBriefRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBriefRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBrief'
+          description: ''
+  /api/v1/project-briefs/{id}/submit/:
+    post:
+      operationId: v1_project_briefs_submit_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project brief.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+          description: ''
+  /api/v1/public/unsubscribe/{token}/:
+    get:
+      operationId: v1_public_unsubscribe_retrieve
+      description: Public opt-out endpoint (no auth). GET = preview, POST = opt out
+        (RFC 8058 one-click compatible).
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnsubscribeInfo'
+          description: ''
+    post:
+      operationId: v1_public_unsubscribe_create
+      description: Public opt-out endpoint (no auth). GET = preview, POST = opt out
+        (RFC 8058 one-click compatible).
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnsubscribeInfo'
+          description: ''
+  /api/v1/research-tasks/:
+    get:
+      operationId: v1_research_tasks_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: agent
+        schema:
+          type: string
+          enum:
+          - LOCAL_LEADS
+          - SAAS_RESEARCH
+        description: |-
+          * `SAAS_RESEARCH` - Agent 1 - SaaS Opportunity Research
+          * `LOCAL_LEADS` - Agent 2 - Local Business Lead Finder
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: parent_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: software_idea
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - COMPLETED
+          - FAILED
+          - QUEUED
+          - RUNNING
+        description: |-
+          * `QUEUED` - Queued
+          * `RUNNING` - Running
+          * `COMPLETED` - Completed
+          * `FAILED` - Failed
+          * `CANCELLED` - Cancelled
+      - in: query
+        name: task_type
+        schema:
+          type: string
+          enum:
+          - LOCAL_LEAD_DISCOVERY
+          - SAAS_CUSTOMER_RESEARCH
+          - SAAS_OPPORTUNITY_RESEARCH
+        description: |-
+          * `SAAS_OPPORTUNITY_RESEARCH` - Agent 1: opportunity research
+          * `SAAS_CUSTOMER_RESEARCH` - Agent 1: customer research + outreach prep
+          * `LOCAL_LEAD_DISCOVERY` - Agent 2: local lead discovery + brief + outreach prep
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResearchTaskList'
+          description: ''
+    post:
+      operationId: v1_research_tasks_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResearchTaskCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResearchTaskCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResearchTaskCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchTask'
+          description: ''
+  /api/v1/research-tasks/{id}/:
+    get:
+      operationId: v1_research_tasks_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this research task.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchTaskDetail'
+          description: ''
+  /api/v1/research-tasks/{id}/cancel/:
+    post:
+      operationId: v1_research_tasks_cancel_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this research task.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchTask'
+          description: ''
+  /api/v1/research-tasks/{id}/retry/:
+    post:
+      operationId: v1_research_tasks_retry_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this research task.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchTask'
+          description: ''
+  /api/v1/software-ideas/:
+    get:
+      operationId: v1_software_ideas_list
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: query
+        name: opportunity
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: research_task
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - APPROVED
+          - ARCHIVED
+          - CHANGES_REQUESTED
+          - DRAFT
+          - REJECTED
+          - WAITING_FOR_APPROVAL
+        description: |-
+          * `DRAFT` - Draft
+          * `WAITING_FOR_APPROVAL` - Waiting For Approval
+          * `APPROVED` - Approved
+          * `CHANGES_REQUESTED` - Changes Requested
+          * `REJECTED` - Rejected
+          * `ARCHIVED` - Archived
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSoftwareIdeaList'
+          description: ''
+  /api/v1/software-ideas/{id}/:
+    get:
+      operationId: v1_software_ideas_retrieve
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this software idea.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoftwareIdea'
+          description: ''
+    patch:
+      operationId: v1_software_ideas_partial_update
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this software idea.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSoftwareIdeaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSoftwareIdeaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSoftwareIdeaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoftwareIdea'
+          description: ''
+  /api/v1/software-ideas/{id}/submit/:
+    post:
+      operationId: v1_software_ideas_submit_create
+      description: |-
+        Scopes a DRF view to the workspace in the X-Workspace-ID header.
+
+        Sets request.workspace / request.membership and filters querysets by workspace.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this software idea.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitForApprovalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+          description: ''
+  /api/v1/suppression-entries/:
+    get:
+      operationId: v1_suppression_entries_list
+      description: 'Create: DEVELOPER+. Delete (re-allow contact): ADMIN+ and audited.'
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: reason
+        schema:
+          type: string
+          enum:
+          - BOUNCE
+          - COMPLAINT
+          - LEGAL_REQUEST
+          - MANUAL
+          - OPT_OUT
+        description: |-
+          * `OPT_OUT` - Opt Out
+          * `BOUNCE` - Bounce
+          * `COMPLAINT` - Complaint
+          * `LEGAL_REQUEST` - Legal Request
+          * `MANUAL` - Manual
+      - in: query
+        name: source
+        schema:
+          type: string
+          enum:
+          - SYSTEM
+          - UNSUBSCRIBE_LINK
+          - USER
+        description: |-
+          * `USER` - User
+          * `UNSUBSCRIBE_LINK` - Unsubscribe Link
+          * `SYSTEM` - System
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - DOMAIN
+          - EMAIL
+          - PHONE
+        description: |-
+          * `EMAIL` - Email
+          * `DOMAIN` - Domain
+          * `PHONE` - Phone
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSuppressionEntryList'
+          description: ''
+    post:
+      operationId: v1_suppression_entries_create
+      description: 'Create: DEVELOPER+. Delete (re-allow contact): ADMIN+ and audited.'
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuppressionEntryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SuppressionEntryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SuppressionEntryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuppressionEntry'
+          description: ''
+  /api/v1/suppression-entries/{id}/:
+    get:
+      operationId: v1_suppression_entries_retrieve
+      description: 'Create: DEVELOPER+. Delete (re-allow contact): ADMIN+ and audited.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this suppression entry.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuppressionEntry'
+          description: ''
+    delete:
+      operationId: v1_suppression_entries_destroy
+      description: 'Create: DEVELOPER+. Delete (re-allow contact): ADMIN+ and audited.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this suppression entry.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/workspaces/:
+    get:
+      operationId: v1_workspaces_list
+      description: Workspaces the current user belongs to. Not scoped by X-Workspace-ID.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWorkspaceList'
+          description: ''
+    post:
+      operationId: v1_workspaces_create
+      description: Workspaces the current user belongs to. Not scoped by X-Workspace-ID.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkspaceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkspaceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+          description: ''
+  /api/v1/workspaces/{id}/:
+    get:
+      operationId: v1_workspaces_retrieve
+      description: Workspaces the current user belongs to. Not scoped by X-Workspace-ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this workspace.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+          description: ''
+    put:
+      operationId: v1_workspaces_update
+      description: Workspaces the current user belongs to. Not scoped by X-Workspace-ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this workspace.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkspaceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkspaceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+          description: ''
+    patch:
+      operationId: v1_workspaces_partial_update
+      description: Workspaces the current user belongs to. Not scoped by X-Workspace-ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this workspace.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkspaceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkspaceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkspaceRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+          description: ''
+components:
+  schemas:
+    ActorTypeEnum:
+      enum:
+      - USER
+      - AGENT
+      - SYSTEM
+      type: string
+      description: |-
+        * `USER` - User
+        * `AGENT` - Agent
+        * `SYSTEM` - System
+    AddressItemRequest:
+      type: object
+      properties:
+        line1:
+          type: string
+          default: ''
+          maxLength: 300
+        city:
+          type: string
+          default: ''
+          maxLength: 120
+        region:
+          type: string
+          default: ''
+          maxLength: 120
+        postal_code:
+          type: string
+          default: ''
+          maxLength: 20
+        country_code:
+          type: string
+          default: ''
+          maxLength: 2
+    AgentTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        agent:
+          allOf:
+          - $ref: '#/components/schemas/AgentTypeEnum'
+          readOnly: true
+        task_type:
+          allOf:
+          - $ref: '#/components/schemas/TaskTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TaskStatusEnum'
+          readOnly: true
+        input:
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        max_attempts:
+          type: integer
+          readOnly: true
+        lease_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        lease_expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancel_requested:
+          type: boolean
+          readOnly: true
+        context:
+          type: object
+          additionalProperties: {}
+          description: Read-only data the agent needs that lives in the backend (approved
+            idea for customer research).
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - agent
+      - attempt
+      - cancel_requested
+      - context
+      - created_at
+      - id
+      - input
+      - lease_expires_at
+      - lease_id
+      - max_attempts
+      - status
+      - task_type
+      - workspace_id
+    AgentTypeEnum:
+      enum:
+      - SAAS_RESEARCH
+      - LOCAL_LEADS
+      type: string
+      description: |-
+        * `SAAS_RESEARCH` - Agent 1 - SaaS Opportunity Research
+        * `LOCAL_LEADS` - Agent 2 - Local Business Lead Finder
+    Approval:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        target_type:
+          allOf:
+          - $ref: '#/components/schemas/ApprovalTargetTypeEnum'
+          readOnly: true
+        target_id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ApprovalStatusEnum'
+          readOnly: true
+          default: PENDING
+        research_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        requested_by_type:
+          allOf:
+          - $ref: '#/components/schemas/ActorTypeEnum'
+          readOnly: true
+        requested_by_user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        requested_by_agent:
+          type: string
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+        snapshot:
+          readOnly: true
+        content_hash:
+          type: string
+          readOnly: true
+        decided_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        decided_by_email:
+          type: string
+          format: email
+          readOnly: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        decision_comment:
+          type: string
+          readOnly: true
+        decision_options:
+          readOnly: true
+        outcome:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content_hash
+      - created_at
+      - decided_at
+      - decided_by
+      - decided_by_email
+      - decision_comment
+      - decision_options
+      - id
+      - outcome
+      - requested_by_agent
+      - requested_by_type
+      - requested_by_user
+      - research_task
+      - snapshot
+      - status
+      - summary
+      - target_id
+      - target_type
+      - updated_at
+    ApprovalDecisionEnum:
+      enum:
+      - APPROVED
+      - REJECTED
+      - CHANGES_REQUESTED
+      type: string
+      description: |-
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `CHANGES_REQUESTED` - Changes Requested
+    ApprovalStatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      - CHANGES_REQUESTED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `CHANGES_REQUESTED` - Changes Requested
+        * `CANCELLED` - Cancelled
+    ApprovalTargetTypeEnum:
+      enum:
+      - SOFTWARE_IDEA
+      - PROJECT_BRIEF
+      - CAMPAIGN
+      type: string
+      description: |-
+        * `SOFTWARE_IDEA` - Software Idea
+        * `PROJECT_BRIEF` - Project Brief
+        * `CAMPAIGN` - Campaign
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        actor_type:
+          allOf:
+          - $ref: '#/components/schemas/ActorTypeEnum'
+          readOnly: true
+        actor_user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        actor_email:
+          type: string
+          format: email
+          readOnly: true
+        actor_agent:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        target_type:
+          type: string
+          readOnly: true
+        target_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        metadata:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor_agent
+      - actor_email
+      - actor_type
+      - actor_user
+      - created_at
+      - id
+      - metadata
+      - target_id
+      - target_type
+    Business:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        website:
+          type: string
+          format: uri
+          readOnly: true
+        domain:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        address_line1:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        region:
+          type: string
+          readOnly: true
+        postal_code:
+          type: string
+          readOnly: true
+        country_code:
+          type: string
+          readOnly: true
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        category:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        source_data:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_line1
+      - category
+      - city
+      - country_code
+      - created_at
+      - description
+      - domain
+      - email
+      - id
+      - latitude
+      - longitude
+      - name
+      - phone
+      - postal_code
+      - region
+      - source_data
+      - updated_at
+      - website
+    BusinessItemRequest:
+      type: object
+      properties:
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        name:
+          type: string
+          minLength: 1
+          maxLength: 300
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            default: ''
+            maxLength: 500
+          - type: string
+            maxLength: 0
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          default: ''
+          maxLength: 50
+        address:
+          $ref: '#/components/schemas/AddressItemRequest'
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        category:
+          type: string
+          default: ''
+          maxLength: 200
+        description:
+          type: string
+          default: ''
+        source_data:
+          type: object
+          additionalProperties: {}
+        evidence_refs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+          maxItems: 100
+      required:
+      - name
+      - ref
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 300
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceTypeEnum'
+          readOnly: true
+        research_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        software_idea:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        project_brief:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          readOnly: true
+        offer: {}
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CampaignStatusEnum'
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        approved_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        launched_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        message_counts:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - approved_at
+      - approved_by
+      - channel
+      - completed_at
+      - created_at
+      - id
+      - launched_at
+      - message_counts
+      - name
+      - project_brief
+      - research_task
+      - software_idea
+      - source
+      - status
+      - updated_at
+    CampaignItemRequest:
+      type: object
+      properties:
+        submit_for_approval:
+          type: boolean
+          default: false
+        approval_summary:
+          type: string
+          default: ''
+          maxLength: 5000
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        name:
+          type: string
+          minLength: 1
+          maxLength: 300
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          default: EMAIL
+        offer:
+          $ref: '#/components/schemas/OfferItemRequest'
+        project_brief_ref:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 200
+        project_brief_id:
+          type: string
+          format: uuid
+          nullable: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageItemRequest'
+      required:
+      - name
+      - ref
+    CampaignStatusEnum:
+      enum:
+      - DRAFT
+      - WAITING_FOR_APPROVAL
+      - APPROVED
+      - CHANGES_REQUESTED
+      - REJECTED
+      - ACTIVE
+      - PAUSED
+      - COMPLETED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `WAITING_FOR_APPROVAL` - Waiting For Approval
+        * `APPROVED` - Approved
+        * `CHANGES_REQUESTED` - Changes Requested
+        * `REJECTED` - Rejected
+        * `ACTIVE` - Active
+        * `PAUSED` - Paused
+        * `COMPLETED` - Completed
+        * `CANCELLED` - Cancelled
+    ChannelEnum:
+      enum:
+      - EMAIL
+      type: string
+      description: '* `EMAIL` - Email'
+    ClaimRequestRequest:
+      type: object
+      properties:
+        worker_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        task_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskTypeEnum'
+      required:
+      - worker_id
+    ClaimResponse:
+      type: object
+      properties:
+        task:
+          allOf:
+          - $ref: '#/components/schemas/AgentTask'
+          nullable: true
+      required:
+      - task
+    CompetitorItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        url:
+          oneOf:
+          - type: string
+            format: uri
+            default: ''
+            maxLength: 500
+          - type: string
+            maxLength: 0
+        notes:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - name
+    CompleteRequestRequest:
+      type: object
+      properties:
+        summary:
+          type: object
+          additionalProperties: {}
+    ContactEmailTypeEnum:
+      enum:
+      - GENERIC_BUSINESS
+      - PERSONAL_WORK
+      - UNKNOWN
+      type: string
+      description: |-
+        * `GENERIC_BUSINESS` - Generic Business
+        * `PERSONAL_WORK` - Personal Work
+        * `UNKNOWN` - Unknown
+    ContactItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          default: ''
+          maxLength: 200
+        role:
+          type: string
+          default: ''
+          maxLength: 200
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          default: ''
+          maxLength: 50
+        email_type:
+          allOf:
+          - $ref: '#/components/schemas/ContactEmailTypeEnum'
+          default: UNKNOWN
+        legal_basis:
+          allOf:
+          - $ref: '#/components/schemas/LegalBasisEnum'
+          default: UNKNOWN
+        legal_basis_note:
+          type: string
+          default: ''
+          maxLength: 2000
+    DecisionRequest:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/ApprovalDecisionEnum'
+        comment:
+          type: string
+          default: ''
+          maxLength: 5000
+        options:
+          type: object
+          additionalProperties: {}
+          description: 'SOFTWARE_IDEA only: {"auto_continue": true, "customer_research_input":
+            {...}}'
+      required:
+      - decision
+    Evidence:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        research_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        source_type:
+          allOf:
+          - $ref: '#/components/schemas/EvidenceSourceTypeEnum'
+          readOnly: true
+        excerpt:
+          type: string
+          readOnly: true
+        retrieved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        metadata:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - excerpt
+      - id
+      - metadata
+      - research_task
+      - retrieved_at
+      - source_type
+      - title
+      - url
+    EvidenceItemRequest:
+      type: object
+      properties:
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        url:
+          oneOf:
+          - type: string
+            format: uri
+            default: ''
+            maxLength: 2000
+          - type: string
+            maxLength: 0
+        title:
+          type: string
+          default: ''
+          maxLength: 500
+        source_type:
+          allOf:
+          - $ref: '#/components/schemas/EvidenceSourceTypeEnum'
+          default: OTHER
+        excerpt:
+          type: string
+          default: ''
+          maxLength: 5000
+        retrieved_at:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: {}
+      required:
+      - ref
+    EvidenceSourceTypeEnum:
+      enum:
+      - WEB_PAGE
+      - SEARCH_RESULT
+      - REVIEW
+      - FORUM
+      - DIRECTORY
+      - SOCIAL
+      - API
+      - DOCUMENT
+      - WEBSITE_SCAN
+      - OTHER
+      type: string
+      description: |-
+        * `WEB_PAGE` - Web Page
+        * `SEARCH_RESULT` - Search Result
+        * `REVIEW` - Review
+        * `FORUM` - Forum
+        * `DIRECTORY` - Directory
+        * `SOCIAL` - Social
+        * `API` - Api
+        * `DOCUMENT` - Document
+        * `WEBSITE_SCAN` - Website Scan
+        * `OTHER` - Other
+    FailRequestRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 60
+        message:
+          type: string
+          default: ''
+          maxLength: 2000
+        retryable:
+          type: boolean
+          default: false
+      required:
+      - code
+    HeartbeatRequestRequest:
+      type: object
+      properties:
+        progress:
+          type: integer
+          maximum: 100
+          minimum: 0
+        stage:
+          type: string
+          minLength: 1
+          maxLength: 60
+        message:
+          type: string
+          maxLength: 500
+    HeartbeatResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        cancel_requested:
+          type: boolean
+        lease_expires_at:
+          type: string
+          format: date-time
+      required:
+      - cancel_requested
+      - lease_expires_at
+      - status
+    Integration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/IntegrationKindEnum'
+        provider:
+          $ref: '#/components/schemas/IntegrationProviderEnum'
+        name:
+          type: string
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/IntegrationStatusEnum'
+        config: {}
+        has_secret:
+          type: boolean
+          readOnly: true
+        last_verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - has_secret
+      - id
+      - kind
+      - last_verified_at
+      - name
+      - provider
+      - updated_at
+    IntegrationKindEnum:
+      enum:
+      - EMAIL
+      - LLM
+      - SEARCH
+      - MAPS
+      - CRM
+      type: string
+      description: |-
+        * `EMAIL` - Email
+        * `LLM` - Llm
+        * `SEARCH` - Search
+        * `MAPS` - Maps
+        * `CRM` - Crm
+    IntegrationProviderEnum:
+      enum:
+      - SMTP
+      - ANTHROPIC
+      - OPENAI
+      - GOOGLE_PLACES
+      - SERPAPI
+      - HUBSPOT
+      - OTHER
+      type: string
+      description: |-
+        * `SMTP` - Smtp
+        * `ANTHROPIC` - Anthropic
+        * `OPENAI` - Openai
+        * `GOOGLE_PLACES` - Google Places
+        * `SERPAPI` - Serpapi
+        * `HUBSPOT` - Hubspot
+        * `OTHER` - Other
+    IntegrationRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/IntegrationKindEnum'
+        provider:
+          $ref: '#/components/schemas/IntegrationProviderEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/IntegrationStatusEnum'
+        config: {}
+        secret:
+          type: string
+          writeOnly: true
+      required:
+      - kind
+      - name
+      - provider
+    IntegrationStatusEnum:
+      enum:
+      - ACTIVE
+      - DISABLED
+      - ERROR
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `DISABLED` - Disabled
+        * `ERROR` - Error
+    Lead:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business:
+          allOf:
+          - $ref: '#/components/schemas/Business'
+          readOnly: true
+        research_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceTypeEnum'
+          readOnly: true
+        software_idea:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/LeadStatusEnum'
+          readOnly: true
+        score:
+          type: integer
+          readOnly: true
+          nullable: true
+        qualification_notes:
+          type: string
+        problems:
+          readOnly: true
+        contact_name:
+          type: string
+          maxLength: 200
+        contact_role:
+          type: string
+          maxLength: 200
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        contact_phone:
+          type: string
+          maxLength: 50
+        contact_email_type:
+          $ref: '#/components/schemas/ContactEmailTypeEnum'
+        legal_basis:
+          $ref: '#/components/schemas/LegalBasisEnum'
+        legal_basis_note:
+          type: string
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+        is_suppressed:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - business
+      - created_at
+      - evidence_ids
+      - id
+      - is_suppressed
+      - problems
+      - research_task
+      - score
+      - software_idea
+      - source
+      - status
+      - updated_at
+    LeadItemRequest:
+      type: object
+      properties:
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        business_ref:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 200
+        business_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/LeadItemStatusEnum'
+          default: NEW
+        score:
+          type: integer
+          maximum: 100
+          minimum: 0
+          nullable: true
+        qualification_notes:
+          type: string
+          default: ''
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemItemRequest'
+        contact:
+          $ref: '#/components/schemas/ContactItemRequest'
+        evidence_refs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+          maxItems: 100
+      required:
+      - ref
+    LeadItemStatusEnum:
+      enum:
+      - NEW
+      - QUALIFIED
+      - DISQUALIFIED
+      type: string
+      description: |-
+        * `NEW` - NEW
+        * `QUALIFIED` - QUALIFIED
+        * `DISQUALIFIED` - DISQUALIFIED
+    LeadStatusEnum:
+      enum:
+      - NEW
+      - QUALIFIED
+      - DISQUALIFIED
+      - CONTACTED
+      - REPLIED
+      - WON
+      - LOST
+      - ARCHIVED
+      type: string
+      description: |-
+        * `NEW` - New
+        * `QUALIFIED` - Qualified
+        * `DISQUALIFIED` - Disqualified
+        * `CONTACTED` - Contacted
+        * `REPLIED` - Replied
+        * `WON` - Won
+        * `LOST` - Lost
+        * `ARCHIVED` - Archived
+    LeadStatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/LeadStatusEnum'
+      required:
+      - status
+    LegalBasisEnum:
+      enum:
+      - LEGITIMATE_INTEREST
+      - CONSENT
+      - UNKNOWN
+      type: string
+      description: |-
+        * `LEGITIMATE_INTEREST` - Legitimate Interest
+        * `CONSENT` - Consent
+        * `UNKNOWN` - Unknown
+    Membership:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - user
+    MembershipRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          minLength: 1
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+    MessageItemRequest:
+      type: object
+      properties:
+        lead_ref:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 200
+        lead_id:
+          type: string
+          format: uuid
+          nullable: true
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 300
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        language:
+          type: string
+          default: ''
+          maxLength: 10
+        sequence_step:
+          type: integer
+          maximum: 1
+          minimum: 1
+          default: 1
+      required:
+      - body
+      - subject
+    MessageStatusEnum:
+      enum:
+      - DRAFT
+      - WAITING_FOR_APPROVAL
+      - APPROVED
+      - REJECTED
+      - SENDING
+      - SENT
+      - FAILED
+      - SUPPRESSED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `WAITING_FOR_APPROVAL` - Waiting For Approval
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `SENDING` - Sending
+        * `SENT` - Sent
+        * `FAILED` - Failed
+        * `SUPPRESSED` - Suppressed
+        * `CANCELLED` - Cancelled
+    OfferItemRequest:
+      type: object
+      properties:
+        headline:
+          type: string
+          default: ''
+          maxLength: 300
+        value_proposition:
+          type: string
+          default: ''
+          maxLength: 5000
+        pricing:
+          type: string
+          default: ''
+          maxLength: 2000
+        call_to_action:
+          type: string
+          default: ''
+          maxLength: 500
+    Opportunity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        research_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        title:
+          type: string
+          readOnly: true
+        problem_statement:
+          type: string
+          readOnly: true
+        industry:
+          type: string
+          readOnly: true
+        target_segment:
+          type: string
+          readOnly: true
+        pain_severity:
+          type: integer
+          readOnly: true
+          nullable: true
+        score:
+          type: integer
+          readOnly: true
+          nullable: true
+        competitors:
+          readOnly: true
+        market_signals:
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/OpportunityStatusEnum'
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - competitors
+      - created_at
+      - evidence_ids
+      - id
+      - industry
+      - market_signals
+      - pain_severity
+      - problem_statement
+      - research_task
+      - score
+      - target_segment
+      - title
+      - updated_at
+    OpportunityItemRequest:
+      type: object
+      properties:
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        problem_statement:
+          type: string
+          minLength: 1
+        industry:
+          type: string
+          default: ''
+          maxLength: 200
+        target_segment:
+          type: string
+          default: ''
+          maxLength: 300
+        pain_severity:
+          type: integer
+          maximum: 5
+          minimum: 1
+          nullable: true
+        score:
+          type: integer
+          maximum: 100
+          minimum: 0
+          nullable: true
+        competitors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompetitorItemRequest'
+        market_signals:
+          type: object
+          additionalProperties: {}
+        evidence_refs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+          maxItems: 100
+      required:
+      - problem_statement
+      - ref
+      - title
+    OpportunityStatusEnum:
+      enum:
+      - NEW
+      - SHORTLISTED
+      - DISMISSED
+      type: string
+      description: |-
+        * `NEW` - New
+        * `SHORTLISTED` - Shortlisted
+        * `DISMISSED` - Dismissed
+    OpportunityStatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/OpportunityStatusEnum'
+      required:
+      - status
+    OutreachMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        campaign:
+          type: string
+          format: uuid
+          readOnly: true
+        lead:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          readOnly: true
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          readOnly: true
+        sequence_step:
+          type: integer
+          readOnly: true
+          default: 1
+        to_email:
+          type: string
+          format: email
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 300
+        body:
+          type: string
+        language:
+          type: string
+          maxLength: 10
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MessageStatusEnum'
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        error:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - business_name
+      - campaign
+      - channel
+      - created_at
+      - error
+      - id
+      - lead
+      - sent_at
+      - sequence_step
+      - status
+      - to_email
+      - updated_at
+    PaginatedApprovalList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Approval'
+    PaginatedAuditEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+    PaginatedBusinessList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Business'
+    PaginatedCampaignList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Campaign'
+    PaginatedEvidenceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'
+    PaginatedIntegrationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Integration'
+    PaginatedLeadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lead'
+    PaginatedMembershipList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+    PaginatedOpportunityList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Opportunity'
+    PaginatedOutreachMessageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutreachMessage'
+    PaginatedProjectBriefList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectBrief'
+    PaginatedResearchTaskList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResearchTask'
+    PaginatedSoftwareIdeaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SoftwareIdea'
+    PaginatedSuppressionEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuppressionEntry'
+    PaginatedWorkspaceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workspace'
+    PatchedCampaignRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 300
+        offer: {}
+    PatchedIntegrationRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/IntegrationKindEnum'
+        provider:
+          $ref: '#/components/schemas/IntegrationProviderEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/IntegrationStatusEnum'
+        config: {}
+        secret:
+          type: string
+          writeOnly: true
+    PatchedLeadRequest:
+      type: object
+      properties:
+        qualification_notes:
+          type: string
+        contact_name:
+          type: string
+          maxLength: 200
+        contact_role:
+          type: string
+          maxLength: 200
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        contact_phone:
+          type: string
+          maxLength: 50
+        contact_email_type:
+          $ref: '#/components/schemas/ContactEmailTypeEnum'
+        legal_basis:
+          $ref: '#/components/schemas/LegalBasisEnum'
+        legal_basis_note:
+          type: string
+    PatchedMembershipRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          minLength: 1
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    PatchedOutreachMessageRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          maxLength: 300
+        body:
+          type: string
+          minLength: 1
+        language:
+          type: string
+          maxLength: 10
+    PatchedProjectBriefRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        summary:
+          type: string
+          minLength: 1
+        proposed_solution:
+          type: string
+        scope_items: {}
+        tech_stack: {}
+        estimated_effort_hours_min:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        estimated_effort_hours_max:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        estimated_budget_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        estimated_budget_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+    PatchedSoftwareIdeaRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        summary:
+          type: string
+          minLength: 1
+        problem:
+          type: string
+        solution:
+          type: string
+        target_customers:
+          type: string
+        key_features: {}
+        pricing_model:
+          type: string
+        differentiation:
+          type: string
+        risks: {}
+        mvp_scope:
+          type: string
+    PatchedWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        sender_name:
+          type: string
+          maxLength: 200
+        sender_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        reply_to_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        sender_company:
+          type: string
+          maxLength: 200
+        sender_postal_address:
+          type: string
+        consent_required_countries: {}
+        daily_send_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+    ProblemItemRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          pattern: ^[A-Z][A-Z0-9_]{1,59}$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          default: MEDIUM
+        description:
+          type: string
+          default: ''
+          maxLength: 5000
+        evidence_refs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+          maxItems: 100
+      required:
+      - code
+      - title
+    ProjectBrief:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        lead:
+          type: string
+          format: uuid
+          readOnly: true
+        research_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        title:
+          type: string
+          maxLength: 300
+        summary:
+          type: string
+        problems:
+          readOnly: true
+        proposed_solution:
+          type: string
+        scope_items: {}
+        tech_stack: {}
+        estimated_effort_hours_min:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        estimated_effort_hours_max:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        estimated_budget_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        estimated_budget_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        approved_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - approved_at
+      - approved_by
+      - created_at
+      - evidence_ids
+      - id
+      - lead
+      - problems
+      - research_task
+      - status
+      - summary
+      - title
+      - updated_at
+    ProjectBriefItemRequest:
+      type: object
+      properties:
+        submit_for_approval:
+          type: boolean
+          default: false
+        approval_summary:
+          type: string
+          default: ''
+          maxLength: 5000
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        lead_ref:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 200
+        lead_id:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        summary:
+          type: string
+          minLength: 1
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemItemRequest'
+        proposed_solution:
+          type: string
+          default: ''
+        scope_items:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 500
+          maxItems: 50
+        tech_stack:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 500
+          maxItems: 50
+        estimated_effort_hours:
+          $ref: '#/components/schemas/RangeItemRequest'
+        estimated_budget:
+          $ref: '#/components/schemas/RangeItemRequest'
+        evidence_refs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+          maxItems: 100
+      required:
+      - ref
+      - summary
+      - title
+    RangeItemRequest:
+      type: object
+      properties:
+        min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          default: ''
+          maxLength: 3
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        full_name:
+          type: string
+          maxLength: 200
+        workspace_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - email
+      - password
+      - workspace_name
+    ResearchTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        agent:
+          allOf:
+          - $ref: '#/components/schemas/AgentTypeEnum'
+          readOnly: true
+        task_type:
+          allOf:
+          - $ref: '#/components/schemas/TaskTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TaskStatusEnum'
+          readOnly: true
+        input:
+          readOnly: true
+        priority:
+          type: integer
+          readOnly: true
+        parent_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        software_idea:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        progress:
+          type: integer
+          readOnly: true
+        stage:
+          type: string
+          readOnly: true
+        progress_message:
+          type: string
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        max_attempts:
+          type: integer
+          readOnly: true
+        cancel_requested:
+          type: boolean
+          readOnly: true
+        error:
+          readOnly: true
+        result_summary:
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        heartbeat_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - agent
+      - attempt
+      - cancel_requested
+      - created_at
+      - created_by
+      - error
+      - finished_at
+      - heartbeat_at
+      - id
+      - input
+      - max_attempts
+      - parent_task
+      - priority
+      - progress
+      - progress_message
+      - result_summary
+      - software_idea
+      - stage
+      - started_at
+      - status
+      - task_type
+      - updated_at
+    ResearchTaskCreateRequest:
+      type: object
+      properties:
+        task_type:
+          $ref: '#/components/schemas/TaskTypeEnum'
+        input:
+          type: object
+          additionalProperties: {}
+        priority:
+          type: integer
+          maximum: 10
+          minimum: -10
+          default: 0
+      required:
+      - input
+      - task_type
+    ResearchTaskDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        agent:
+          allOf:
+          - $ref: '#/components/schemas/AgentTypeEnum'
+          readOnly: true
+        task_type:
+          allOf:
+          - $ref: '#/components/schemas/TaskTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TaskStatusEnum'
+          readOnly: true
+        input:
+          readOnly: true
+        priority:
+          type: integer
+          readOnly: true
+        parent_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        software_idea:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        progress:
+          type: integer
+          readOnly: true
+        stage:
+          type: string
+          readOnly: true
+        progress_message:
+          type: string
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        max_attempts:
+          type: integer
+          readOnly: true
+        cancel_requested:
+          type: boolean
+          readOnly: true
+        error:
+          readOnly: true
+        result_summary:
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        heartbeat_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        result_counts:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+      required:
+      - agent
+      - attempt
+      - cancel_requested
+      - created_at
+      - created_by
+      - error
+      - finished_at
+      - heartbeat_at
+      - id
+      - input
+      - max_attempts
+      - parent_task
+      - priority
+      - progress
+      - progress_message
+      - result_counts
+      - result_summary
+      - software_idea
+      - stage
+      - started_at
+      - status
+      - task_type
+      - updated_at
+    ResultBundleRequest:
+      type: object
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersionEnum'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceItemRequest'
+        opportunities:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpportunityItemRequest'
+        software_ideas:
+          type: array
+          items:
+            $ref: '#/components/schemas/SoftwareIdeaItemRequest'
+        businesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessItemRequest'
+        leads:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadItemRequest'
+        project_briefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectBriefItemRequest'
+        campaigns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignItemRequest'
+      required:
+      - schema_version
+    ResultReport:
+      type: object
+      properties:
+        created:
+          type: object
+          additionalProperties:
+            type: integer
+        updated:
+          type: object
+          additionalProperties:
+            type: integer
+        skipped:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        refs:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+              format: uuid
+        approvals_requested:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - approvals_requested
+      - created
+      - refs
+      - skipped
+      - updated
+    ReviewStatusEnum:
+      enum:
+      - DRAFT
+      - WAITING_FOR_APPROVAL
+      - APPROVED
+      - CHANGES_REQUESTED
+      - REJECTED
+      - ARCHIVED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `WAITING_FOR_APPROVAL` - Waiting For Approval
+        * `APPROVED` - Approved
+        * `CHANGES_REQUESTED` - Changes Requested
+        * `REJECTED` - Rejected
+        * `ARCHIVED` - Archived
+    RoleEnum:
+      enum:
+      - OWNER
+      - ADMIN
+      - DEVELOPER
+      - VIEWER
+      type: string
+      description: |-
+        * `OWNER` - Owner
+        * `ADMIN` - Admin
+        * `DEVELOPER` - Developer
+        * `VIEWER` - Viewer
+    SchemaVersionEnum:
+      enum:
+      - '1.0'
+      type: string
+      description: '* `1.0` - 1.0'
+    SeverityEnum:
+      enum:
+      - LOW
+      - MEDIUM
+      - HIGH
+      type: string
+      description: |-
+        * `LOW` - LOW
+        * `MEDIUM` - MEDIUM
+        * `HIGH` - HIGH
+    SoftwareIdea:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        research_task:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        opportunity:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          maxLength: 200
+        summary:
+          type: string
+        problem:
+          type: string
+        solution:
+          type: string
+        target_customers:
+          type: string
+        key_features: {}
+        pricing_model:
+          type: string
+        differentiation:
+          type: string
+        risks: {}
+        mvp_scope:
+          type: string
+        score:
+          type: integer
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        approved_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - approved_at
+      - approved_by
+      - created_at
+      - evidence_ids
+      - id
+      - name
+      - opportunity
+      - research_task
+      - score
+      - status
+      - summary
+      - updated_at
+    SoftwareIdeaItemRequest:
+      type: object
+      properties:
+        submit_for_approval:
+          type: boolean
+          default: false
+        approval_summary:
+          type: string
+          default: ''
+          maxLength: 5000
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        opportunity_ref:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 200
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        summary:
+          type: string
+          minLength: 1
+        problem:
+          type: string
+          default: ''
+        solution:
+          type: string
+          default: ''
+        target_customers:
+          type: string
+          default: ''
+        key_features:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 500
+          maxItems: 50
+        pricing_model:
+          type: string
+          default: ''
+        differentiation:
+          type: string
+          default: ''
+        risks:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 500
+          maxItems: 50
+        mvp_scope:
+          type: string
+          default: ''
+        score:
+          type: integer
+          maximum: 100
+          minimum: 0
+          nullable: true
+        evidence_refs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+          maxItems: 100
+      required:
+      - name
+      - ref
+      - summary
+    SourceTypeEnum:
+      enum:
+      - SAAS_RESEARCH
+      - LOCAL_LEADS
+      - MANUAL
+      type: string
+      description: |-
+        * `SAAS_RESEARCH` - Agent 1
+        * `LOCAL_LEADS` - Agent 2
+        * `MANUAL` - Manual (user)
+    SubmitForApprovalRequest:
+      type: object
+      properties:
+        summary:
+          type: string
+          default: ''
+          maxLength: 5000
+    SuppressionCheckRequest:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        emails:
+          type: array
+          items:
+            type: string
+            format: email
+            minLength: 1
+          maxItems: 500
+        phones:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 500
+      required:
+      - task_id
+    SuppressionEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/SuppressionTypeEnum'
+        value:
+          type: string
+          maxLength: 320
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/SuppressionReasonEnum'
+          default: MANUAL
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SuppressionSourceEnum'
+          readOnly: true
+        note:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - id
+      - source
+      - type
+      - value
+    SuppressionEntryRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SuppressionTypeEnum'
+        value:
+          type: string
+          minLength: 1
+          maxLength: 320
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/SuppressionReasonEnum'
+          default: MANUAL
+        note:
+          type: string
+      required:
+      - type
+      - value
+    SuppressionReasonEnum:
+      enum:
+      - OPT_OUT
+      - BOUNCE
+      - COMPLAINT
+      - LEGAL_REQUEST
+      - MANUAL
+      type: string
+      description: |-
+        * `OPT_OUT` - Opt Out
+        * `BOUNCE` - Bounce
+        * `COMPLAINT` - Complaint
+        * `LEGAL_REQUEST` - Legal Request
+        * `MANUAL` - Manual
+    SuppressionSourceEnum:
+      enum:
+      - USER
+      - UNSUBSCRIBE_LINK
+      - SYSTEM
+      type: string
+      description: |-
+        * `USER` - User
+        * `UNSUBSCRIBE_LINK` - Unsubscribe Link
+        * `SYSTEM` - System
+    SuppressionTypeEnum:
+      enum:
+      - EMAIL
+      - DOMAIN
+      - PHONE
+      type: string
+      description: |-
+        * `EMAIL` - Email
+        * `DOMAIN` - Domain
+        * `PHONE` - Phone
+    TaskStatusEnum:
+      enum:
+      - QUEUED
+      - RUNNING
+      - COMPLETED
+      - FAILED
+      - CANCELLED
+      type: string
+      description: |-
+        * `QUEUED` - Queued
+        * `RUNNING` - Running
+        * `COMPLETED` - Completed
+        * `FAILED` - Failed
+        * `CANCELLED` - Cancelled
+    TaskTypeEnum:
+      enum:
+      - SAAS_OPPORTUNITY_RESEARCH
+      - SAAS_CUSTOMER_RESEARCH
+      - LOCAL_LEAD_DISCOVERY
+      type: string
+      description: |-
+        * `SAAS_OPPORTUNITY_RESEARCH` - Agent 1: opportunity research
+        * `SAAS_CUSTOMER_RESEARCH` - Agent 1: customer research + outreach prep
+        * `LOCAL_LEAD_DISCOVERY` - Agent 2: local lead discovery + brief + outreach prep
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    UnsubscribeInfo:
+      type: object
+      properties:
+        email_masked:
+          type: string
+        sender:
+          type: string
+        already_unsubscribed:
+          type: boolean
+      required:
+      - already_unsubscribed
+      - email_masked
+      - sender
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - email
+      - full_name
+      - id
+    Workspace:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        role:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sender_name:
+          type: string
+          maxLength: 200
+        sender_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        reply_to_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        sender_company:
+          type: string
+          maxLength: 200
+        sender_postal_address:
+          type: string
+        consent_required_countries: {}
+        daily_send_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        sender_identity_complete:
+          type: boolean
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - role
+      - sender_identity_complete
+      - slug
+    WorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        sender_name:
+          type: string
+          maxLength: 200
+        sender_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        reply_to_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        sender_company:
+          type: string
+          maxLength: 200
+        sender_postal_address:
+          type: string
+        consent_required_countries: {}
+        daily_send_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - name
+  securitySchemes:
+    AgentToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Format: `Agent agt_<prefix>_<secret>`'
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
