@@ -1,0 +1,23 @@
+[project]
+name = "local-leads"
+version = "0.1.0"
+description = "Agent 2 - Local Business Lead Finder (LOCAL_LEAD_DISCOVERY worker for the platform Agent API v1)."
+requires-python = ">=3.11"
+dependencies = [
+    "platform-sdk",          # agents/platform_sdk (install with: pip install -e agents/platform_sdk)
+    "httpx>=0.27,<1",
+    "anthropic>=2.6,<3",     # default LLM provider (LLM_PROVIDER=anthropic)
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "cryptography>=42"]   # cryptography: test CA / certificates for TLS checks
+
+[project.scripts]
+local-leads = "local_leads.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["local_leads*"]

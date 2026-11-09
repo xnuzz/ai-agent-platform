@@ -60,8 +60,23 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Per-workspace LLM/search keys | ⬜ | Env vars only (platform feature ⬜) |
 
 ## Agent 2 (Team 2) — `agents/agent_2_local_leads/`
-⬜ Not implemented (directory reserved). Backend side ready and tested with a mock agent.
-**What Team 2 needs to do:** implement `LOCAL_LEAD_DISCOVERY` per `AGENT_2_CONTRACT.md`; confirm/extend problem codes; Dockerfile + compose service `agent2`; contract tests.
+**Updated:** 2026-11-09 · Team 2 (Chat 2) · branch `feature/agent-2-leads` · package `local_leads` (README in the directory)
+
+| Area | Status | Notes |
+|---|---|---|
+| `LOCAL_LEAD_DISCOVERY` handler via `platform_sdk.AgentWorker` (all inputs + defaults, 7 recommended stages, batches of `BATCH_SIZE`=10, evidence for every business + problem) | ✅ | Live contract test vs real backend: claim → bundles accepted → brief + campaign PENDING → launch blocked until both approved → sent with backend footer |
+| Website analyzer — real HTTP(S): robots.txt (RFC 9309), per-host rate limit, Crawl-delay, timeouts + deadline, size cap, UA with info URL; HTTPS/redirect, TLS validity/expiry, load time, viewport, title/meta, SEO, CMS version, legacy markup, mixed content, contact form, booking, analytics, security headers, accessibility, broken-link sample | ✅ | Tested only against local test servers (HTTP + HTTPS with a test CA), never the internet. TLS check uses a direct socket (bypasses HTTP proxies) |
+| Scoring (deterministic, explained in `qualification_notes`), contacts (generic e-mails preferred, personal ones discarded, honest `legal_basis`), suppression check before drafting | ✅ | |
+| Project brief (deterministic scope/hours/budget + LLM prose) and outreach draft written in parallel; one campaign per qualified lead with `project_brief_ref`; both `submit_for_approval` | ✅ | Suppressed contact → brief DRAFT, no campaign; no e-mail → brief only |
+| LLM layer: interface + JSON validation + Anthropic provider (structured outputs, default `claude-sonnet-5-5`, env `LLM_PROVIDER/LLM_MODEL/LLM_API_KEY`) + template fallback | 🟡 | Request/response handling tested with the real SDK over a mocked transport; **never called the real API** (no key here). Templates are English only |
+| Discovery: Google Places (New) Text Search, OpenStreetMap (Nominatim + Overpass, keyless) | 🟡 | Implemented against documented APIs, unit-tested with mocked HTTP only; **not run against the real services** (no keys / network). `NO_GOOGLE_BUSINESS_PROFILE` not detected |
+| `fake` discovery + `fake` LLM providers | 🧪 | Mocks for tests/offline dev only (`discovery/fake.py`, `llm/fake.py`), log a warning when selected |
+| CLI `python -m local_leads` (`--once`, `--check-config`) | ✅ | Smoke-run as a real process against `runserver` (fake providers): task COMPLETED, 3 approvals pending |
+| Dockerfile (`agents/agent_2_local_leads/Dockerfile`) | 🟡 | Written; **not built** (no Docker daemon in this environment). Wheel build verified |
+| Compose service `agent2` | ⛔ | Commented snippet in the agent README; needs Team 3 (see Requests) |
+| Follow-ups (step > 1), reply handling, per-workspace LLM keys | ⬜ | Blocked on platform v2 (ADR-008) / Team 3 |
+
+**Tests:** `tests/agent_2/` (60 tests: analyzer, discovery, LLM, scoring/briefs, handler bundle conformance against the backend `ResultBundle` serializer, live-server contract test). Full `pytest`: 111 passed.
 
 ## Requests to Team 3 (agent teams append here)
 | Date | From | Request | Status |
@@ -69,12 +84,17 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | 2026-11-09 | Team 1 | **Compose:** add service `agent1` to `docker-compose.yml` (ready-to-paste commented snippet in `agents/agent_1_saas_research/README.md` §Docker; build context = repo root, `dockerfile: agents/agent_1_saas_research/Dockerfile`) and add `AGENT_1_SEARCH_PROVIDER=brave`, `AGENT_1_SEARCH_API_KEY=` to `.env.example`. | **Done** 2026-11-09 — added under compose profile `agents` (opt-in: `docker compose --profile agents up`) and without `:?` so the base stack starts without agent keys; untested (no Docker daemon) |
 | 2026-11-09 | Team 1 | **CI:** `pip install -e agents/platform_sdk -e agents/agent_1_saas_research` in the backend job so `tests/agent_1` (92 tests incl. a live-server contract test) actually run; today `tests/agent_1/conftest.py` skips them with a warning when `pydantic` is missing. | **Done** 2026-11-09 |
 | 2026-11-09 | Team 1 | **SDK:** add `platform_sdk.InvalidInputError` mapped by `AgentWorker` to `fail(code="invalid_input", retryable=False)`. `AGENT_1_CONTRACT.md` lists `invalid_input`, but handlers can currently only produce `agent_error`/`retryable_error`/`CANCELLED`. Agent 1 already raises `saas_research.errors.InvalidTaskInput` and will subclass the new exception once it exists. | **Done** 2026-11-09 — `platform_sdk.InvalidInputError` (covered in E2E test). Team 1 follow-up: make `InvalidTaskInput` subclass it |
+| 2026-11-09 | Team 2 | Add compose service `agent2` to `docker-compose.yml` (snippet in `agents/agent_2_local_leads/README.md` §Setup; build `agents/agent_2_local_leads/Dockerfile` with repo-root context). Also add `DISCOVERY_PROVIDER`, `GOOGLE_PLACES_API_KEY`, `CRAWLER_INFO_URL` to `.env.example` (agent section). | Open |
+| 2026-11-09 | Team 2 | CI (`.github/workflows/ci.yml`): also `pip install anthropic>=2.6,<3` (or `pip install -e agents/platform_sdk -e agents/agent_2_local_leads[test]`). Without it the 13 tests in `tests/agent_2/test_agent2_llm.py` are skipped (`importorskip`); all other Agent 2 tests run with backend deps only. `pytest.ini` needs **no** change (`tests/agent_2/conftest.py` adjusts `sys.path`). | Open |
+| 2026-11-09 | Team 2 | FYI: the Business dedupe key uses the hostname only (port ignored), so sites differing only by port collapse into one Business. Harmless in production; Agent 2 tests use distinct loopback IPs. No change required. | FYI |
+| 2026-11-09 | Team 2 | Nice-to-have: expose per-workspace `Integration(kind=LLM/MAPS)` secrets to agents (task `context`) so Agent 2 can use workspace keys instead of deployment env vars. | Open |
 
 ## Contract changes
 | Date | Change | Breaking | Affected |
 |---|---|---|---|
 | 2026-11-08 | Initial v1 contracts: API, Agent API, Result Bundle 1.0, statuses | — | All |
 | 2026-11-09 | SDK: new `InvalidInputError` → fail code `invalid_input` (additive) | No | Team 1, Team 2 |
+| 2026-11-09 | Team 2: new Agent 2 problem codes `WEBSITE_UNREACHABLE`, `NO_HTTPS_REDIRECT`, `SSL_INVALID_CERTIFICATE`, `SSL_EXPIRING_SOON`, `MIXED_CONTENT` (`AGENT_2_CONTRACT.md`). Additive; backend accepts any `UPPER_SNAKE` code, frontend shows codes verbatim | No | Frontend (display only) |
 
 ## Known issues / risks
 - A message can remain `SENDING` if the worker dies mid-SMTP call (by design: at-most-once). No UI to resolve yet.
