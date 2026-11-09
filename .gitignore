@@ -20,3 +20,4 @@ frontend/dist/
 .vscode/
 # Local backups
 *.bundle
+*.zip
