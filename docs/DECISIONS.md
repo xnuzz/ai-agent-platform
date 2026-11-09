@@ -57,3 +57,7 @@ Settings: `AUTH_COOKIE_SAMESITE`, `AUTH_COOKIE_SECURE`, `AUTH_THROTTLE_RATE`, `P
 
 ### ADR-015 · Accepted · Inbound email events through one provider-neutral signed webhook
 One HMAC-SHA256 (timestamp + body, 5-minute window) endpoint and normalized event format; provider adapters translate. Why: no lock-in to one ESP before one is chosen; suppression logic stays in one place.
+
+### ADR-016 · Accepted · Local Business Finder: polling-derived live events, OpenFreeMap basemap
+The Agent 2 dashboard (`/local-finder`) derives the event vocabulary (`research.*`, `business.*`) client-side by diffing REST snapshots (3 s while a task runs, 15 s idle, full refresh 30 s, exponential backoff on errors) and renders a MapLibre GL map (clustered HTML markers) on OpenFreeMap vector tiles (OpenStreetMap data, keyless, commercial use allowed, attribution shown).
+Why: polling is the platform's existing live mechanism (no SSE/WebSocket endpoint); the transport is isolated in `features/localFinder/liveFeed.ts`, so a push endpoint can replace it without touching the store or UI. OpenFreeMap needs no key or account. Consequences: up to ~3 s latency; tile host must be allowed by deployment CSP; override with `VITE_MAP_STYLE_URL` (full style) or `VITE_MAP_TILES_URL`/`VITE_MAP_GLYPHS_URL`. The map never positions a business without backend coordinates.

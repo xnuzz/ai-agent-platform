@@ -7,6 +7,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const nav = [
   { to: '/', label: 'Dashboard' },
+  { to: '/local-finder', label: 'Local Business Finder' },
   { to: '/tasks', label: 'Agent tasks' },
   { to: '/approvals', label: 'Approval center' },
   { to: '/ideas', label: 'Software ideas' },
