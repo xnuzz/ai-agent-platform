@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "drf_spectacular",
     "apps.common",
@@ -109,6 +110,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # --- CORS (Vue dev server / deployed frontend) ---
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
+CORS_ALLOW_CREDENTIALS = True  # refresh cookie on /api/v1/auth/*
 CORS_ALLOW_HEADERS = (
     "accept", "authorization", "content-type", "x-workspace-id", "x-request-id",
 )
@@ -124,15 +126,23 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
-    "DEFAULT_THROTTLE_RATES": {"auth": "20/min", "public": "30/min", "webhook": "600/min"},
+    "DEFAULT_THROTTLE_RATES": {"auth": env("AUTH_THROTTLE_RATE", "20/min"), "public": "30/min", "webhook": "600/min"},
 }
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(env("JWT_ACCESS_MINUTES", "15"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(env("JWT_REFRESH_DAYS", "7"))),
     "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
 }
+
+# Refresh token lives only in an httpOnly cookie scoped to the auth endpoints (ADR-014).
+AUTH_REFRESH_COOKIE = "platform_refresh"
+AUTH_REFRESH_COOKIE_PATH = "/api/v1/auth/"
+AUTH_REFRESH_COOKIE_SAMESITE = env("AUTH_COOKIE_SAMESITE", "Lax")
+AUTH_REFRESH_COOKIE_SECURE = env_bool("AUTH_COOKIE_SECURE", not DEBUG)
+PASSWORD_RESET_TIMEOUT = int(env("PASSWORD_RESET_TIMEOUT_SECONDS", "3600"))
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Unified AI SaaS Platform API",

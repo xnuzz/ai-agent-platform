@@ -39,7 +39,7 @@ Suppression (email/domain/phone), legal basis ≠ UNKNOWN, workspace consent-req
 
 ### ADR-010 · Accepted · Auth: JWT for users, hashed service tokens for agents
 SimpleJWT (15 min / 7 d rotating). Frontend keeps tokens in `sessionStorage` (MVP). Agent tokens `agt_<prefix>_<secret>`, SHA-256 at rest, created via `manage.py create_agent_token`.
-Follow-up: move refresh token to httpOnly cookie before production (INTEGRATION_STATUS).
+Superseded in part by ADR-014 (refresh token moved to an httpOnly cookie).
 
 ### ADR-011 · Accepted · Secrets
 No secrets in code or repo; settings fail fast if missing; test settings generate random keys. Integration secrets Fernet-encrypted with `FIELD_ENCRYPTION_KEY`, write-only in API. LLM/search keys for agents are deployment env vars (agent-owned).
@@ -49,3 +49,11 @@ No secrets in code or repo; settings fail fast if missing; test settings generat
 
 ### ADR-013 · Accepted · Team 3 owns `agents/platform_sdk`
 The SDK is integration infrastructure; agent teams consume it and request changes through INTEGRATION_STATUS.
+
+### ADR-014 · Accepted · Browser sessions: access token in memory, refresh token in httpOnly cookie
+Login returns only `access` (kept in JS memory, never web storage); the refresh token is an httpOnly, `SameSite=Lax`, `Secure` (non-DEBUG) cookie scoped to `/api/v1/auth/`. Refresh rotates and blacklists the previous token (simplejwt `token_blacklist`); logout and password change/reset revoke tokens.
+Why: XSS can no longer exfiltrate a long-lived credential; logout is real. Trade-offs: frontend and API must be same-site (e.g. `app.example.com` + `api.example.com`) and CORS must allow credentials; non-browser API clients use a cookie jar. Breaking for clients that read `refresh` from the login body (only our frontend did).
+Settings: `AUTH_COOKIE_SAMESITE`, `AUTH_COOKIE_SECURE`, `AUTH_THROTTLE_RATE`, `PASSWORD_RESET_TIMEOUT_SECONDS`.
+
+### ADR-015 · Accepted · Inbound email events through one provider-neutral signed webhook
+One HMAC-SHA256 (timestamp + body, 5-minute window) endpoint and normalized event format; provider adapters translate. Why: no lock-in to one ESP before one is chosen; suppression logic stays in one place.

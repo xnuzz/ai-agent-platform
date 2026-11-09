@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { api, errorText } from '@/api/client'
+import AccountPanel from '@/components/AccountPanel.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import IntegrationsPanel from '@/components/IntegrationsPanel.vue'
 import MembersPanel from '@/components/MembersPanel.vue'
@@ -19,7 +20,7 @@ const form = ref({
 })
 const error = ref<string | null>(null)
 const saved = ref(false)
-const tab = ref<'workspace' | 'members' | 'integrations' | 'privacy'>('workspace')
+const tab = ref<'workspace' | 'members' | 'integrations' | 'privacy' | 'account'>('workspace')
 
 async function save() {
   error.value = null
@@ -38,11 +39,12 @@ async function save() {
 <template>
   <PageHeader title="Settings" subtitle="Sender identity is required before any campaign can launch." />
   <div class="mb-4 flex gap-2">
-    <button v-for="t in (['workspace', 'members', 'integrations', 'privacy'] as const)" :key="t" :class="tab === t ? 'btn-primary' : 'btn-secondary'" class="capitalize" @click="tab = t">{{ t }}</button>
+    <button v-for="t in (['workspace', 'members', 'integrations', 'privacy', 'account'] as const)" :key="t" :class="tab === t ? 'btn-primary' : 'btn-secondary'" class="capitalize" @click="tab = t">{{ t }}</button>
   </div>
   <MembersPanel v-if="tab === 'members'" />
   <IntegrationsPanel v-else-if="tab === 'integrations'" />
   <PrivacyPanel v-else-if="tab === 'privacy'" />
+  <AccountPanel v-else-if="tab === 'account'" />
   <ErrorBanner v-if="tab === 'workspace'" :message="error" />
   <form v-if="tab === 'workspace'" class="card max-w-2xl space-y-4" @submit.prevent="save">
     <fieldset :disabled="!auth.isAdmin()" class="grid gap-4 md:grid-cols-2">

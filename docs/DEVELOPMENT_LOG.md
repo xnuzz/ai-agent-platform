@@ -4,6 +4,25 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-09 — Team 3 (Chat 3) — Session 3: e2e suite, GDPR, email events, auth hardening
+
+**Implemented**
+- Playwright browser e2e suite (`frontend/e2e`, 13 tests, mock agents seeded via the real API) + CI `e2e` job.
+- GDPR: `privacy/export` + `privacy/erase` (ADMIN, pseudonymous audit), `Workspace.data_retention_days` + daily retention job; Settings › Privacy.
+- Inbound email-events webhook (HMAC + timestamp): hard bounce / complaint / unsubscribe → suppression; reply → lead `REPLIED`.
+- Auth (ADR-014): httpOnly refresh cookie, rotation + blacklist, logout, password reset (no enumeration) and change; Settings › Account; login page "Forgot password?" + `/reset-password`.
+
+**Bugs found by the browser tests and fixed:** logout fired without awaiting (navigation could cancel the revoke); API client threw on empty 202 bodies; auth/webhook views returned 403 instead of 401 on bad credentials.
+
+**DB:** migrations `accounts.0002_workspace_data_retention_days`, simplejwt `token_blacklist`.
+**Breaking:** login body no longer contains `refresh` (frontend updated; agents unaffected).
+**New settings:** `EMAIL_WEBHOOK_SECRET`, `AUTH_COOKIE_SAMESITE`, `AUTH_COOKIE_SECURE`, `AUTH_THROTTLE_RATE`, `PASSWORD_RESET_TIMEOUT_SECONDS`.
+**Tests:** `pytest` 223 passed; Playwright 13/13; `npm run build` passes; OpenAPI/TS regenerated.
+**Not done / blocked:** Docker never built (no daemon here); ESP adapters for the webhook; email verification + invitations.
+**Next:** pick an email provider and write its webhook adapter; email verification + invitations; build Docker on a machine with Docker.
+
+---
+
 ## 2026-11-09 — Team 3 (Chat 3) — Session 2: frontend edit screens + team worktrees
 
 **Implemented**

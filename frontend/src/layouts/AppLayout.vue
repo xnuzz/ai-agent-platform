@@ -20,7 +20,7 @@ const wsId = computed({
   get: () => auth.current?.id ?? '',
   set: (id: string) => auth.selectWorkspace(auth.workspaces.find((w) => w.id === id) ?? null),
 })
-function logout() { auth.logout(); router.push({ name: 'login' }) }
+async function logout() { await auth.logout(true); router.push({ name: 'login' }) }
 </script>
 
 <template>

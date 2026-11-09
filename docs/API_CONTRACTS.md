@@ -34,13 +34,18 @@ This file defines conventions and the agent integration contract in prose. When 
 | 429 | `throttled` | auth/public endpoints |
 | 500 | `server_error` | |
 
-## User API (JWT `Authorization: Bearer <access>`)
+## User API (JWT `Authorization: Bearer <access>`; refresh via httpOnly cookie — ADR-014)
 Roles: read = VIEWER+, write = DEVELOPER+ unless noted.
 
 | Method & path | Notes |
 |---|---|
 | `POST auth/register/` | public; creates user + workspace (OWNER) |
-| `POST auth/token/`, `POST auth/token/refresh/` | public; `{email,password}` → `{access,refresh}` |
+| `POST auth/token/` | public, throttled; `{email,password}` → `{access}` + sets httpOnly cookie `platform_refresh` (path `/api/v1/auth/`). **Breaking 2026-11-09:** `refresh` no longer in the body |
+| `POST auth/token/refresh/` | public; no body — uses the cookie, rotates it (old token blacklisted) → `{access}`; 401 + cookie cleared if invalid |
+| `POST auth/logout/` | public; blacklists the cookie's refresh token, clears cookie → 204 (idempotent) |
+| `POST auth/password-reset/` | public, throttled; `{email}` → always 202 (no account enumeration); emails a link to `PUBLIC_APP_URL/reset-password?uid&token` (valid `PASSWORD_RESET_TIMEOUT_SECONDS`, default 1 h) |
+| `POST auth/password-reset/confirm/` | public; `{uid, token, new_password}` → 204; single-use; revokes all refresh tokens |
+| `POST auth/password/change/` | JWT; `{current_password, new_password}` → 204; revokes all refresh tokens, clears cookie |
 | `GET auth/me/` | |
 | `GET/POST workspaces/`, `GET/PATCH workspaces/{id}/` | no workspace header; PATCH = ADMIN+ |
 | `GET/POST/PATCH/DELETE members/` | ADMIN+ for writes; add existing users by email (invites: not implemented) |
@@ -60,6 +65,7 @@ Roles: read = VIEWER+, write = DEVELOPER+ unless noted.
 | `GET dashboard/summary/` | counts by status per entity |
 | `POST privacy/export/` | ADMIN+; `{email}` → all personal data about that address in the workspace (JSON) |
 | `POST privacy/erase/` | ADMIN+; `{email, confirm: true}` → anonymize leads, redact messages, clear business email, add `LEGAL_REQUEST` suppression → `{leads_anonymized, messages_redacted, businesses_updated, suppressed}` |
+| Browser clients | must send `credentials: 'include'`; API and frontend must be same-site (cookie is `SameSite=Lax`) |
 | `GET/POST public/unsubscribe/{token}/` | public, throttled; GET preview, POST opt-out (RFC 8058 compatible) |
 | `POST webhooks/email-events/` | inbound email events, HMAC-signed (see below); 503 until `EMAIL_WEBHOOK_SECRET` is set |
 

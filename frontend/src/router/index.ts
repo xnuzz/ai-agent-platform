@@ -6,6 +6,7 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
+    { path: '/reset-password', name: 'reset-password', component: () => import('@/views/ResetPasswordView.vue'), meta: { public: true } },
     { path: '/unsubscribe/:token', name: 'unsubscribe', component: () => import('@/views/UnsubscribeView.vue'), meta: { public: true } },
     {
       path: '/',

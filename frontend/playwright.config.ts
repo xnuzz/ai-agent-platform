@@ -28,14 +28,15 @@ export default defineConfig({
       cwd: '../backend',
       url: `http://127.0.0.1:${API_PORT}/healthz`,
       reuseExistingServer: !process.env.CI,
-      env: { DJANGO_DEBUG: 'true', CELERY_TASK_ALWAYS_EAGER: 'true', CORS_ALLOWED_ORIGINS: `http://localhost:${WEB_PORT}` },
+      env: { DJANGO_DEBUG: 'true', CELERY_TASK_ALWAYS_EAGER: 'true', CORS_ALLOWED_ORIGINS: `http://localhost:${WEB_PORT}`, AUTH_THROTTLE_RATE: '1000/min' },
       timeout: 60_000,
     },
     {
       command: `npx vite --port ${WEB_PORT} --strictPort`,
       url: `http://localhost:${WEB_PORT}`,
       reuseExistingServer: !process.env.CI,
-      env: { VITE_API_URL: `http://127.0.0.1:${API_PORT}` },
+      // Same host as the page (localhost) so the SameSite refresh cookie is sent.
+      env: { VITE_API_URL: `http://localhost:${API_PORT}` },
       timeout: 60_000,
     },
   ],

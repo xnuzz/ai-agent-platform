@@ -22,7 +22,7 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | OpenAPI schema + generated TS types | ✅ | `docs/openapi.yaml`, `frontend/src/api/schema.d.ts` |
 | `agents/platform_sdk` (client + worker + keepalive) | ✅ | Used by E2E tests |
 | Vue: login/register, dashboard, tasks (both agents), task detail, approval center, ideas, leads+briefs, campaigns+messages, suppression, settings, unsubscribe | ✅ | Browser smoke-tested (Playwright) |
-| Browser e2e suite (`frontend/e2e`, Playwright, 9 tests, mock agents) | ✅ | Runs in CI `e2e` job |
+| Browser e2e suite (`frontend/e2e`, Playwright, 13 tests, mock agents) | ✅ | Runs in CI `e2e` job |
 | Vue: edit + resubmit idea / project brief / campaign offer / messages (CHANGES_REQUESTED loop, reviewer comment shown) | ✅ | Browser-tested (Playwright, 16 checks) |
 | Vue: lead detail (contact, legal basis, status moves), opportunity curation, members, integrations (write-only secret), audit log | ✅ | Browser-tested; audit log ADMIN-only route |
 | Vue: member invitations, integration "test connection", audit export | ⬜ | Backend support missing |
@@ -35,7 +35,8 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Follow-up sequences (step > 1) | ⬜ | v2 (ADR-008); reply detection now exists via webhook |
 | GDPR export + erasure (API + Settings › Privacy), retention job (daily, per-workspace days) | ✅ | 5 unit tests + browser test |
 | Per-workspace LLM keys delivered to agents | ⬜ | Agents use env vars for now |
-| httpOnly refresh cookie, password reset, email verification | ⬜ | |
+| httpOnly refresh cookie + rotation/blacklist, real logout, password reset + change (ADR-014) | ✅ | 8 backend + 4 browser tests |
+| Email verification on signup, member invitations | ⬜ | |
 | Live updates (SSE/WebSocket) | ⬜ | UI polls every 3–5 s |
 | Deployment manifests (`infrastructure/deployment/`) | ⬜ | |
 
@@ -97,6 +98,8 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 |---|---|---|---|
 | 2026-11-08 | Initial v1 contracts: API, Agent API, Result Bundle 1.0, statuses | — | All |
 | 2026-11-09 | SDK: new `InvalidInputError` → fail code `invalid_input` (additive) | No | Team 1, Team 2 |
+| 2026-11-09 | Auth: login no longer returns `refresh` (httpOnly cookie instead); new logout/password endpoints (ADR-014) | **Yes** (frontend only; agents unaffected) | Team 3 |
+| 2026-11-09 | New: `privacy/export`, `privacy/erase`, `webhooks/email-events`, `Workspace.data_retention_days` | No | Team 3 |
 | 2026-11-09 | Team 2: new Agent 2 problem codes `WEBSITE_UNREACHABLE`, `NO_HTTPS_REDIRECT`, `SSL_INVALID_CERTIFICATE`, `SSL_EXPIRING_SOON`, `MIXED_CONTENT` (`AGENT_2_CONTRACT.md`). Additive; backend accepts any `UPPER_SNAKE` code, frontend shows codes verbatim | No | Frontend (display only) |
 
 ## Known issues / risks
@@ -106,10 +109,8 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 - No throttling on agent endpoints (tokens are trusted service credentials).
 
 ## Next steps — Team 3 (in order)
-1. ✅ Done 2026-11-09: pushed to `xnuzz/ai-agent-platform`, PR #1 merged with green CI.
-2. `docker compose up` end-to-end; fix Dockerfiles if needed.
-3. ✅ Done 2026-11-09: Team 1 + Team 2 merged into `feature/main-platform`; all their requests resolved; combined suite 203 passed.
-4. httpOnly-cookie refresh token; password reset.
-5. ✅ Done 2026-11-09: GDPR export/erasure + retention job.
-6. ✅ Done 2026-11-09: signed email-events webhook (bounce/complaint/unsubscribe/reply). Next: a provider adapter for whichever ESP is chosen.
-7. Review Team 1/2 PRs against contracts; extend E2E tests with real agent code paths.
+Done 2026-11-09: GitHub + PR #1 merged (green CI) · Team 1/2 merged, requests resolved · browser e2e suite in CI · GDPR export/erasure/retention · email-events webhook · httpOnly-cookie auth + password reset.
+1. ⛔ `docker compose up` end-to-end and fix Dockerfiles — needs a machine with Docker (none in the dev container).
+2. Choose an email provider (SES / Mailgun / Postmark) → write its adapter for `webhooks/email-events` and its SMTP/API sender.
+3. Email verification on signup + member invitations.
+4. Review Team 1/2 PRs against contracts; extend e2e with real agent code paths (fake providers).
