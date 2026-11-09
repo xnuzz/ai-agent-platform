@@ -1,6 +1,6 @@
 # Integration Status
 
-**Last updated:** 2026-11-09 · Team 3 (Chat 3) · Contract version: API v1 / Result Bundle 1.0
+**Last updated:** 2026-11-09 · Agent 2 dashboard UI session (frontend) · Contract version: API v1 / Result Bundle 1.0 (unchanged)
 Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not implemented · ⛔ Blocked
 
 ## Main platform (Team 3)
@@ -37,7 +37,13 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Per-workspace LLM keys delivered to agents | ⬜ | Agents use env vars for now |
 | httpOnly refresh cookie + rotation/blacklist, real logout, password reset + change (ADR-014) | ✅ | 8 backend + 4 browser tests |
 | Email verification on signup, member invitations | ⬜ | |
-| Live updates (SSE/WebSocket) | ⬜ | UI polls every 3–5 s |
+| Live updates (SSE/WebSocket) | ⬜ | UI polls every 3–5 s; the Local Business Finder derives `research.*`/`business.*` events from polled snapshots (ADR-016) |
+| **Vue: Local Business Finder (`/local-finder`, Agent 2 dashboard)** — top nav, business list (search, sort, 8 filters, run selector, keyboard nav), MapLibre dark map (clustered HTML markers, 5 marker states, hover tooltip, popup, selection fly-to, discovery ripple, search-radius circle, pick-centre-on-map), live toasts + activity feed, agent status/progress, 6 KPIs, 3 charts, research configuration drawer, 5-tab detail workspace | ✅ | Browser-tested against the real API with a MOCK streaming Agent 2 (`e2e/local-finder.spec.ts`); only existing endpoints; responsive (phone/tablet/desktop checked) |
+| Finder actions: start / stop / retry run; approve / reject lead (brief approval) or archive lead; request more research (`CHANGES_REQUESTED` + comment); edit project (BriefEditor); edit outreach (message + offer) + submit; approve outreach (campaign approval) | ✅ | All call documented endpoints; disabled with an explanation when the state does not allow them |
+| Finder: pause / resume research | ⛔ | No backend/SDK/agent support — buttons shown disabled with a note; requested below |
+| Finder: follow-up message | ⬜ | v1 is step 1 only (ADR-008); shown as "not available" |
+| Finder basemap tiles (OpenFreeMap) | 🟡 | Style written against the OpenMapTiles schema but **never rendered with real tiles here** (tile host blocked in the dev container); without tiles the map shows a dark background, markers stay correct and a notice is shown. Verify visually on a networked machine |
+| Finder demo feed (`?demo=1`) | 🧪 | Development builds only (excluded from production bundles); fictional Sofia businesses, "DEMO DATA" banner, actions disabled |
 | Deployment manifests (`infrastructure/deployment/`) | ⬜ | |
 
 ## Agent 1 (Team 1) — `agents/agent_1_saas_research/`
@@ -91,6 +97,10 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | 2026-11-09 | Team 2 | Add compose service `agent2` to `docker-compose.yml` (snippet in `agents/agent_2_local_leads/README.md` §Setup; build `agents/agent_2_local_leads/Dockerfile` with repo-root context). Also add `DISCOVERY_PROVIDER`, `GOOGLE_PLACES_API_KEY`, `CRAWLER_INFO_URL` to `.env.example` (agent section). | **Done** 2026-11-09 — profile `agents`, default discovery `osm` (no key), env defaults so the base stack starts; untested (no Docker daemon) |
 | 2026-11-09 | Team 2 | CI (`.github/workflows/ci.yml`): also `pip install anthropic>=2.6,<3` (or `pip install -e agents/platform_sdk -e agents/agent_2_local_leads[test]`). Without it the 13 tests in `tests/agent_2/test_agent2_llm.py` are skipped (`importorskip`); all other Agent 2 tests run with backend deps only. `pytest.ini` needs **no** change (`tests/agent_2/conftest.py` adjusts `sys.path`). | **Done** 2026-11-09 — CI installs `-e agents/agent_2_local_leads` (pulls `anthropic`) |
 | 2026-11-09 | Team 2 | FYI: the Business dedupe key uses the hostname only (port ignored), so sites differing only by port collapse into one Business. Harmless in production; Agent 2 tests use distinct loopback IPs. No change required. | **Acknowledged** — intended: one business per host; no change |
+| 2026-11-09 | Agent 2 dashboard (UI) | **Pause/resume research:** `POST research-tasks/{id}/pause|resume/` + a `pause_requested` flag in the heartbeat response + SDK/agent support (stop at checkpoint, resume from last batch). The dashboard shows disabled Pause/Resume until this exists. | Open |
+| 2026-11-09 | Agent 2 dashboard (UI) | **Push events:** an SSE endpoint (e.g. `GET events/?workspace=…`) emitting `research.started/progress/completed/failed`, `business.discovered/updated/qualified`. Only `features/localFinder/liveFeed.ts` would change. | Open (polling works meanwhile) |
+| 2026-11-09 | Agent 2 dashboard (UI) | **Lead filters:** `ordering=updated_at` / `updated_after=` on `leads/` (cheaper incremental polling) and a `business__first_seen_task` filter so businesses re-discovered by a run (existing leads keep their first `research_task`) can be shown in that run's scope. | Open |
+| 2026-11-09 | Agent 2 dashboard (UI) → Team 2 | Always send `latitude/longitude` (businesses without them are list-only on the map) and a short `description`; keep `WEBSITE_SCAN` `metadata.facts` key names stable (listed in `AGENT_2_CONTRACT.md` › dashboard). Optional: act on brief `CHANGES_REQUESTED` (re-research) — the "Request more research" button records the comment only. | Open |
 | 2026-11-09 | Team 2 | Nice-to-have: expose per-workspace `Integration(kind=LLM/MAPS)` secrets to agents (task `context`) so Agent 2 can use workspace keys instead of deployment env vars. | **Accepted (backlog)** — tracked under "Per-workspace LLM keys delivered to agents" |
 
 ## Contract changes
@@ -100,9 +110,12 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | 2026-11-09 | SDK: new `InvalidInputError` → fail code `invalid_input` (additive) | No | Team 1, Team 2 |
 | 2026-11-09 | Auth: login no longer returns `refresh` (httpOnly cookie instead); new logout/password endpoints (ADR-014) | **Yes** (frontend only; agents unaffected) | Team 3 |
 | 2026-11-09 | New: `privacy/export`, `privacy/erase`, `webhooks/email-events`, `Workspace.data_retention_days` | No | Team 3 |
+| 2026-11-09 | Frontend: new route `/local-finder` (Agent 2 dashboard) using existing endpoints only; documented the scan-fact keys and fields the dashboard reads (`AGENT_2_CONTRACT.md` › dashboard). No API/schema change, OpenAPI unchanged | No | Team 2 (keep fact keys stable), Team 3 |
 | 2026-11-09 | Team 2: new Agent 2 problem codes `WEBSITE_UNREACHABLE`, `NO_HTTPS_REDIRECT`, `SSL_INVALID_CERTIFICATE`, `SSL_EXPIRING_SOON`, `MIXED_CONTENT` (`AGENT_2_CONTRACT.md`). Additive; backend accepts any `UPPER_SNAKE` code, frontend shows codes verbatim | No | Frontend (display only) |
 
 ## Known issues / risks
+- Local Business Finder: tile rendering unverified (see above); MapLibre adds ~300 kB gzip, loaded only on `/local-finder` (own chunk); its worker is served as `assets/maplibre-gl-worker-*.mjs` — the static server must send a JavaScript MIME type for `.mjs`.
+- Local Business Finder loads at most 1,000 Agent 2 leads (10 pages); a notice is shown when truncated.
 - A message can remain `SENDING` if the worker dies mid-SMTP call (by design: at-most-once). No UI to resolve yet.
 - `LeadSerializer.is_suppressed` costs one query per lead (OK at page_size ≤100).
 - Task claiming is FIFO across workspaces; no per-workspace fairness or quotas yet.
@@ -114,3 +127,4 @@ Done 2026-11-09: GitHub + PR #1 merged (green CI) · Team 1/2 merged, requests r
 2. Choose an email provider (SES / Mailgun / Postmark) → write its adapter for `webhooks/email-events` and its SMTP/API sender.
 3. Email verification on signup + member invitations.
 4. Review Team 1/2 PRs against contracts; extend e2e with real agent code paths (fake providers).
+5. Local Business Finder: check the basemap with real OpenFreeMap tiles; decide on pause/resume + SSE requests above.

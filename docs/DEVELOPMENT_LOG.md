@@ -4,6 +4,28 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-09 — Agent 2 dashboard UI session — Local Business Finder (`/local-finder`)
+
+**Implemented (frontend only, existing endpoints only)**
+- Full-screen route `/local-finder` with its own top navigation (logo, Dashboard / Local Business Finder / SaaS Opportunity Research / Approvals, business search, notifications = pending approvals + activity, agent status, profile with workspace switch + sign out); linked from the main sidebar.
+- Left: business list — monogram avatar, name, category, location, score ring, top problem, review state; search, sort, 8 filters with counts, research-run selector, arrow-key navigation, "no map pin" for businesses without coordinates.
+- Centre: MapLibre GL 6 dark map (custom OpenMapTiles style on OpenFreeMap tiles), clustered HTML markers (new / high-potential glow / reviewed / approved / rejected), hover tooltip, popup with "Open details", selection fly-to + highlight, discovery drop-in + ripple, auto-framing until the user moves the map, search-radius circle, pick-centre-on-map, legend, degraded mode when tiles fail; three SVG charts below (discoveries over time, qualified opportunities by category, score distribution) with tooltips and sr-only tables.
+- Right: agent status (IDLE / waiting / SCANNING + LIVE indicator / unresponsive / COMPLETED / FAILED / stopped), country, city/region, radius, current stage + message, progress ring; New research / Stop (two-step) / Retry; six KPIs with rings and 24 h trends; live activity feed + connection state.
+- Research configuration drawer → `LOCAL_LEAD_DISCOVERY` input: country (all ISO-3166 via `Intl`), city, region, neighbourhood (sent as note), map-picked centre + radius, categories, development services → `checks`, min score, max businesses, language, notes.
+- Detail workspace (drawer, 5 tabs): business info + coordinates; website analysis from `WEBSITE_SCAN` facts (mobile, measured accessibility, broken links, missing functionality, technical issues; opt-in sandboxed preview); opportunity (problems with evidence links, recommended solution, why it benefits, source URLs); project (scope, tech, effort → derived complexity/weeks, budget as hypothesis, Edit project via `BriefEditor`); outreach (channel, recipient, legal basis, message, offer, edit + submit, approve; follow-up shown as not available). Footer: Approve lead / Reject lead / Request more research.
+- Live transport: adaptive polling + snapshot diff → documented events (ADR-016); reconnect with backoff; first snapshot is a silent baseline.
+- Dev-only demo feed (`?demo=1`, excluded from production bundles, clearly labelled).
+
+**Files:** `frontend/src/views/LocalBusinessFinderView.vue`, `frontend/src/components/localFinder/**` (14 components), `frontend/src/features/localFinder/{model,events,liveFeed,analysis,workspace,catalog,mapStyle}.ts`, `features/localFinder/demo/demoFeed.ts`, `frontend/src/stores/localFinder.ts`, `frontend/src/api/localFinder.ts`; edits: `router/index.ts`, `layouts/AppLayout.vue` (nav link), `style.css` (`.btn-accent`), `env.d.ts`, `vite.config.ts` (MapLibre chunk), `e2e/seed.py` (`empty`, `stream` modes), new `e2e/local-finder.spec.ts`.
+**API/DB:** none. **New dependency:** `maplibre-gl@6.16.0` (BSD-3).
+**Bugs found in browser testing and fixed:** MapLibre worker URL broken under Vite (fixed with `setWorkerUrl` + `?url` asset); `.maplibregl-map{position:relative}` overrode the container's `absolute inset-0`, collapsing the map to 300 px and clipping markers (inline style); empty-state overlay swallowed the pick-on-map click; Escape only worked with focus inside a drawer (single page-level handler).
+**Tests:** `npm run build` passes; Playwright 14/14 (13 existing + `local-finder.spec.ts`: configure → start → mock agent streams 3 batches → toasts, markers, KPIs, unmapped note → filters/search → popup → detail tabs → approve lead + outreach → request more research → archive); manual screenshots at 1440, 1920, tablet (1024) and phone (iPhone 13): no horizontal overflow, no JS errors. `pytest` 223 passed (backend unchanged).
+**Mocked:** demo feed (dev only); the e2e agent (`seed.py stream`) is a mock with fixed fictional data. **Not verified:** real basemap tiles (host blocked here), real Agent 2 discovery data.
+**Not implemented / blocked:** pause/resume (no platform support — requested), push events (polling), follow-up messages (ADR-008).
+**Next:** verify tiles on a networked machine; Team 3 decisions on pause/resume, SSE and lead filters (INTEGRATION_STATUS › Requests).
+
+---
+
 ## 2026-11-09 — Team 3 (Chat 3) — Session 3: e2e suite, GDPR, email events, auth hardening
 
 **Implemented**

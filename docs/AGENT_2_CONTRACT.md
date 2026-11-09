@@ -54,3 +54,17 @@ Adding a code: append here + INTEGRATION_STATUS "Contract changes" (frontend sho
 - Submit results in batches (e.g. every 10 businesses) so progress is visible and retries are cheap.
 
 Reference payload: `tests/support/bundles.py::local_leads_bundle`.
+
+## Local Business Finder dashboard (frontend `/local-finder`) — what it reads
+The dashboard uses only existing user endpoints (no new API). Agent output it depends on:
+| Data | Used for | Rule |
+|---|---|---|
+| `businesses[].latitude/longitude` | map pin | Plotted exactly as stored (backend decimal strings). Missing, malformed, out of range or `0,0` → **list-only, never placed or guessed**. Always send provider coordinates. |
+| `businesses[].category`, `address.city`, `country_code`, `website`, `description` | cards, popup, filters, category chart | `description` is the popup blurb (falls back to `qualification_notes`). |
+| `leads[].score` | potential tier: high ≥ 75, medium 50–74, low < 50 (display only) | |
+| `leads[].problems[]` (+ `evidence_ids`) | "identified problem" = most severe; opportunity tab links each problem to its evidence | Keep `title` short and factual. |
+| `WEBSITE_SCAN` evidence `metadata.facts` (keys from `local_leads.analyzer`: `viewport`, `accessibility_issues`, `images(_missing_alt)`, `links{checked,broken[]}`, `contact_form`, `online_booking`, `analytics_detected`, `https`, `tls{checked,valid,days_left,issuer,error}`, `html_seconds`, `html_bytes`, `cms(_version)`, `security_headers_missing`, `insecure_resources`, `seo_issues`, `title`, `meta_description`, `legacy_markup`) + `scanned`, `skipped_reason` | website-analysis tab | A missing key is shown as "not measured", never as passed. Renaming a key = contract change (log it). |
+| heartbeat `progress/stage/message` | agent status card, activity feed | Stages above; message shown verbatim. |
+| project brief + campaign (`submit_for_approval`) | Approve lead (= brief approval), Approve outreach (= campaign approval), Request more research (= brief `CHANGES_REQUESTED` with comment) | Agent 2 does not yet act on `CHANGES_REQUESTED` automatically. |
+
+Live events (`research.started/progress/completed/failed`, `business.discovered/updated/qualified`) are derived in the browser by diffing polled snapshots (`frontend/src/features/localFinder/events.ts`); agents emit nothing extra. Submitting in batches (`BATCH_SIZE`) is what makes discoveries appear progressively. A business already known from an earlier run keeps its original `research_task` (backend dedupe), so it shows as an update in "All research runs", not as a new discovery of the current run.

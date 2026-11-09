@@ -8,6 +8,8 @@ export const router = createRouter({
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
     { path: '/reset-password', name: 'reset-password', component: () => import('@/views/ResetPasswordView.vue'), meta: { public: true } },
     { path: '/unsubscribe/:token', name: 'unsubscribe', component: () => import('@/views/UnsubscribeView.vue'), meta: { public: true } },
+    // Full-screen dashboard with its own top navigation (map needs the width the sidebar layout would take).
+    { path: '/local-finder', name: 'local-finder', component: () => import('@/views/LocalBusinessFinderView.vue') },
     {
       path: '/',
       component: AppLayout,
