@@ -20,7 +20,7 @@ jobs:
         with: {python-version: "3.13"}
       - run: pip install -r backend/requirements-dev.txt
       - name: Install SDK + agent packages (so tests/agent_* run, not skip)
-        run: pip install -e agents/platform_sdk -e agents/agent_1_saas_research
+        run: pip install -e agents/platform_sdk -e agents/agent_1_saas_research -e agents/agent_2_local_leads
       - run: pytest
       - name: OpenAPI schema is up to date (contract drift check)
         working-directory: backend

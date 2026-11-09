@@ -54,5 +54,20 @@ services:
     depends_on: [backend]
     restart: unless-stopped
 
+  agent2:
+    profiles: [agents]
+    build: {context: ., dockerfile: agents/agent_2_local_leads/Dockerfile}
+    environment:
+      PLATFORM_API_URL: http://backend:8000
+      PLATFORM_AGENT_TOKEN: ${AGENT_2_PLATFORM_TOKEN:-}
+      DISCOVERY_PROVIDER: ${AGENT_2_DISCOVERY_PROVIDER:-osm}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5-5}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      CRAWLER_INFO_URL: ${CRAWLER_INFO_URL:-}
+    depends_on: [backend]
+    restart: unless-stopped
+
 volumes:
   pgdata:
