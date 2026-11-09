@@ -17,6 +17,24 @@ test('software idea: changes requested -> edit -> resubmit', async ({ page }) =>
   await expect(page.locator('label:has-text("Name") + input')).toBeDisabled()
 })
 
+test('software idea: locked while pending, decided in place from the detail page', async ({ page }) => {
+  await nav(page, 'Software ideas')
+  await page.getByRole('heading', { name: 'ChairFill' }).click()
+  await expect(page.getByText('Locked — only DRAFT or CHANGES_REQUESTED')).toBeVisible()
+  const name = page.locator('label:has-text("Name") + input')
+  await expect(name).toBeDisabled()
+  await expect(name).toHaveCSS('cursor', 'not-allowed') // locked fields must not look editable
+
+  const review = page.getByRole('region', { name: 'Latest review' })
+  await review.getByPlaceholder('Comment (optional)').fill('Decided from the idea page')
+  await review.getByRole('button', { name: 'Request changes' }).click()
+  await expect(page.getByText('Decision recorded.')).toBeVisible()
+  await expect(review.getByText('CHANGES REQUESTED')).toBeVisible()
+  await expect(page.getByText('Decided from the idea page')).toBeVisible()
+  await expect(name).toBeEnabled() // CHANGES_REQUESTED unlocks editing without a reload
+  await expect(review.getByRole('button', { name: 'Approve', exact: true })).toHaveCount(0)
+})
+
 test('opportunity curation', async ({ page }) => {
   await nav(page, 'Software ideas')
   await page.getByRole('button', { name: 'Shortlist' }).click()

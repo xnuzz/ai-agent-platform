@@ -11,5 +11,5 @@ const text = computed({
 </script>
 
 <template>
-  <textarea v-model.lazy="text" class="input" :rows="rows ?? 4" :placeholder="placeholder ?? 'One item per line'" :disabled="disabled" />
+  <textarea v-model.lazy="text" class="input" :rows="rows ?? 4" :placeholder="disabled ? '' : (placeholder ?? 'One item per line')" :disabled="disabled" />
 </template>

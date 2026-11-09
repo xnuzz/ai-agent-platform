@@ -44,6 +44,11 @@ const submit = () => run(async () => {
   note.value = ''
   reviewKey.value++
 }, 'Submitted for approval.')
+const decided = () => run(async () => {
+  const b = await api.get<ProjectBrief>(`project-briefs/${props.brief.id}/`)
+  form.value = pick(b)
+  emit('changed', b)
+}, 'Decision recorded.')
 </script>
 
 <template>
@@ -52,7 +57,7 @@ const submit = () => run(async () => {
       <h3 class="font-semibold">Project brief</h3>
       <span class="flex items-center gap-3"><Notice :notice="notice" /><StatusBadge :status="brief.status" /></span>
     </div>
-    <LatestDecision :target-id="brief.id" :refresh-key="reviewKey" />
+    <LatestDecision :target-id="brief.id" :refresh-key="reviewKey" :can-decide="canWrite" @decided="decided" />
     <ErrorBanner :message="error" />
     <fieldset :disabled="!editable" class="space-y-4">
       <div><label class="label">Title</label><input v-model="form.title" class="input" required maxlength="300" /></div>

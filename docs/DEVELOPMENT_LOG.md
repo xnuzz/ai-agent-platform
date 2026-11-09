@@ -4,6 +4,23 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-09 — Team 3 — Session 4: decide reviews from detail pages
+
+**Trigger:** idea detail page for a `WAITING_FOR_APPROVAL` idea was a dead end. It showed "Latest review: PENDING, awaiting decision" but gave no way to decide, and the locked fields looked editable.
+
+**Implemented**
+- `LatestDecision`: new `canDecide` / `approveHint` props and a `decided` event. While the latest approval is `PENDING`, reviewers get Approve / Request changes / Reject plus a comment box in place (calls `approvals/{id}/decide/`; the backend still enforces role, state and stale-content checks). The agent's request summary is shown too.
+- Wired into idea detail (hint: approving queues Agent 1 customer research), `BriefEditor` (lead page) and campaign detail (hint: approving sends nothing). Each page reloads after a decision, so `CHANGES_REQUESTED` unlocks editing right away.
+- `.input` now has disabled styling (muted background, `not-allowed` cursor, no resize handle), which also applies inside a disabled `<fieldset>`. `LinesInput` hides its placeholder when disabled.
+
+**Files:** `frontend/src/components/{LatestDecision,BriefEditor,LinesInput}.vue`, `frontend/src/views/{IdeaDetailView,CampaignDetailView}.vue`, `frontend/src/style.css`, `frontend/e2e/edit-flows.spec.ts`.
+**API/DB/deps:** none. No contract change.
+**Tests:** `npm run build` passes. Playwright 14/14 locally against Postgres 16 (new test: idea is locked and looks disabled while pending, then Request changes in place unlocks editing).
+**Not done:** `pytest` not re-run (no backend change).
+**Noted, not changed (Team 1 dir):** with mock providers, Agent 1's fake LLM writes a Python list into idea text (`"(sources ['S16', 'S17'])"`, `saas_research/llm/fake_provider.py`). This only affects 🧪 mock output.
+
+---
+
 ## 2026-11-09 — Team 3 (Chat 3) — Session 3: e2e suite, GDPR, email events, auth hardening
 
 **Implemented**

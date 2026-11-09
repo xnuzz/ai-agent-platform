@@ -46,6 +46,7 @@ const submit = () => run(async () => {
   await load()
   reviewKey.value++
 }, 'Submitted for approval.')
+const decided = () => run(load, 'Decision recorded.')
 
 const labels: Record<string, string> = {
   problem: 'Problem', solution: 'Solution', target_customers: 'Target customers', pricing_model: 'Pricing model',
@@ -67,7 +68,8 @@ const labels: Record<string, string> = {
     </div>
     <div class="grid gap-4 lg:grid-cols-3">
       <form class="card space-y-4 lg:col-span-2" @submit.prevent="save">
-        <LatestDecision :target-id="idea.id" :refresh-key="reviewKey" />
+        <LatestDecision :target-id="idea.id" :refresh-key="reviewKey" :can-decide="auth.canWrite()"
+          approve-hint="Approving queues Agent 1 customer research for this idea." @decided="decided" />
         <fieldset :disabled="!editable" class="space-y-4">
           <div><label class="label">Name</label><input v-model="form.name" class="input" required maxlength="200" /></div>
           <div><label class="label">Summary</label><textarea v-model="form.summary" class="input" rows="3" required /></div>
