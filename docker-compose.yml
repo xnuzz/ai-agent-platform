@@ -1,0 +1,73 @@
+# Local development stack. Agent workers are opt-in: `docker compose --profile agents up`
+# (create tokens first: docker compose exec backend python manage.py create_agent_token ...).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: platform
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U platform"], interval: 5s, retries: 10}
+
+  redis:
+    image: redis:7-alpine
+
+  backend:
+    build: {context: ., dockerfile: infrastructure/docker/backend.Dockerfile}
+    env_file: .env
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    ports: ["8000:8000"]
+    depends_on: {db: {condition: service_healthy}, redis: {condition: service_started}}
+
+  worker:
+    build: {context: ., dockerfile: infrastructure/docker/backend.Dockerfile}
+    env_file: .env
+    command: celery -A config worker -l info
+    depends_on: [backend]
+
+  beat:
+    build: {context: ., dockerfile: infrastructure/docker/backend.Dockerfile}
+    env_file: .env
+    command: celery -A config beat -l info
+    depends_on: [backend]
+
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npx vite --host 0.0.0.0 --port 5173"
+    environment: {VITE_API_URL: "http://localhost:8000"}
+    volumes: ["./frontend:/app", "/app/node_modules"]
+    ports: ["5173:5173"]
+
+  agent1:
+    profiles: [agents]
+    build: {context: ., dockerfile: agents/agent_1_saas_research/Dockerfile}
+    environment:
+      PLATFORM_API_URL: http://backend:8000
+      PLATFORM_AGENT_TOKEN: ${AGENT_1_PLATFORM_TOKEN:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5-5}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      SEARCH_PROVIDER: ${AGENT_1_SEARCH_PROVIDER:-brave}
+      SEARCH_API_KEY: ${AGENT_1_SEARCH_API_KEY:-}
+    depends_on: [backend]
+    restart: unless-stopped
+
+  agent2:
+    profiles: [agents]
+    build: {context: ., dockerfile: agents/agent_2_local_leads/Dockerfile}
+    environment:
+      PLATFORM_API_URL: http://backend:8000
+      PLATFORM_AGENT_TOKEN: ${AGENT_2_PLATFORM_TOKEN:-}
+      DISCOVERY_PROVIDER: ${AGENT_2_DISCOVERY_PROVIDER:-osm}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5-5}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      CRAWLER_INFO_URL: ${CRAWLER_INFO_URL:-}
+    depends_on: [backend]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
