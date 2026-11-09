@@ -37,8 +37,27 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Deployment manifests (`infrastructure/deployment/`) | ⬜ | |
 
 ## Agent 1 (Team 1) — `agents/agent_1_saas_research/`
-⬜ Not implemented (directory reserved). Backend side is ready and tested with a mock agent.
-**What Team 1 needs to do:** implement handlers for `SAAS_OPPORTUNITY_RESEARCH` and `SAAS_CUSTOMER_RESEARCH` per `AGENT_1_CONTRACT.md` using `platform_sdk.AgentWorker`; add a Dockerfile + compose service `agent1` (env `PLATFORM_API_URL`, `PLATFORM_AGENT_TOKEN`, `LLM_*`); add contract tests that validate your bundles against the backend (pattern: `tests/integration/test_end_to_end.py`).
+**Last updated:** 2026-11-09 · Team 1 (Chat 1) · branch `feature/agent-1-saas` · package `saas_research` (see its README)
+
+| Area | Status | Notes |
+|---|---|---|
+| Handlers `SAAS_OPPORTUNITY_RESEARCH` + `SAAS_CUSTOMER_RESEARCH` via `AgentWorker`/`TaskContext` | ✅ | All contract inputs/defaults honoured; recommended stage names; batched submits; `submit_for_approval` + `approval_summary` on ideas and campaign |
+| Pipeline steps (research → scoring → ideas → bundles; customers → offer → outreach) | ✅ | Separate modules, unit-tested |
+| Evidence grounding (no fabricated URLs/emails; uncited claims dropped) | ✅ | Enforced in code, tested |
+| Suppression check before drafting; honest `legal_basis` (generic → LEGITIMATE_INTEREST, else UNKNOWN); `sequence_step` 1; plain-text bodies w/o signature/opt-out | ✅ | Tested incl. live backend launch (only lawful leads emailed) |
+| Local bundle validator + backend `ResultBundle` serializer conformance | ✅ | Every emitted bundle checked in tests |
+| Live contract test with real handlers (`tests/agent_1/test_live_contract.py`) | ✅ | Uses 🧪 mock providers; real backend over HTTP |
+| CLI `python -m saas_research` (`--once`, `--check-config`) | ✅ | Smoke-run against a local `runserver` with mock providers |
+| Anthropic LLM provider (default `claude-sonnet-5-5`, structured JSON output, refusal fallback, error mapping) | 🟡 | Unit-tested with mocked HTTP only. **No API key here → never exercised against the real API** |
+| Brave / SerpAPI search providers | 🟡 | Unit-tested with mocked HTTP only. **No keys → never exercised for real** |
+| HTTP page fetcher (robots.txt, SSRF guard, size cap) | 🟡 | Unit-tested with mocked transport; not run against the internet |
+| `fake` LLM / search / fetcher | 🧪 | Deterministic mocks for tests/dev; CLI requires `AGENT1_ALLOW_MOCK_PROVIDERS=true` |
+| Dockerfile (`agents/agent_1_saas_research/Dockerfile`) | 🟡 | Install step verified in a clean venv; **image not built** (no Docker daemon in this environment) |
+| Compose service `agent1` | ⛔ | `docker-compose.yml` is Team 3's — snippet in Agent 1 README; requested below |
+| `invalid_input` fail code | ⛔ | SDK cannot emit it; Agent 1 reports bad context as `agent_error` — requested below |
+| Agent 1 tests in CI | ⛔ | CI installs only backend deps; `tests/agent_1` is skipped (with a warning) without `pydantic` — requested below |
+| Re-submission after CHANGES_REQUESTED (idea/campaign edit loop) | ⬜ | Not implemented; a retried task re-submits the same refs idempotently |
+| Per-workspace LLM/search keys | ⬜ | Env vars only (platform feature ⬜) |
 
 ## Agent 2 (Team 2) — `agents/agent_2_local_leads/`
 ⬜ Not implemented (directory reserved). Backend side ready and tested with a mock agent.
@@ -47,7 +66,9 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 ## Requests to Team 3 (agent teams append here)
 | Date | From | Request | Status |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-11-09 | Team 1 | **Compose:** add service `agent1` to `docker-compose.yml` (ready-to-paste commented snippet in `agents/agent_1_saas_research/README.md` §Docker; build context = repo root, `dockerfile: agents/agent_1_saas_research/Dockerfile`) and add `AGENT_1_SEARCH_PROVIDER=brave`, `AGENT_1_SEARCH_API_KEY=` to `.env.example`. | Open |
+| 2026-11-09 | Team 1 | **CI:** `pip install -e agents/platform_sdk -e agents/agent_1_saas_research` in the backend job so `tests/agent_1` (92 tests incl. a live-server contract test) actually run; today `tests/agent_1/conftest.py` skips them with a warning when `pydantic` is missing. | Open |
+| 2026-11-09 | Team 1 | **SDK:** add `platform_sdk.InvalidInputError` mapped by `AgentWorker` to `fail(code="invalid_input", retryable=False)`. `AGENT_1_CONTRACT.md` lists `invalid_input`, but handlers can currently only produce `agent_error`/`retryable_error`/`CANCELLED`. Agent 1 already raises `saas_research.errors.InvalidTaskInput` and will subclass the new exception once it exists. | Open |
 
 ## Contract changes
 | Date | Change | Breaking | Affected |
