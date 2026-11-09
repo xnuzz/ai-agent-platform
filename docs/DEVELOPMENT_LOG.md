@@ -4,6 +4,24 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-09 — Team 3 (Chat 3) — Session 2: frontend edit screens + team worktrees
+
+**Implemented**
+- Git worktrees for parallel team work: `/home/user/worktrees/agent-1-saas` (`feature/agent-1-saas`), `/home/user/worktrees/agent-2-leads` (`feature/agent-2-leads`); each has an untracked `.env.worktree` pointing at its own test DB (`platform_a1`, `platform_a2`) so suites run concurrently.
+- Frontend screens: idea detail/edit/resubmit (`/ideas/:id`), opportunity shortlist/dismiss/reset, lead detail (`/leads/:id`) with contact + legal-basis editing, status moves and embedded project-brief editor (edit/resubmit), campaign offer + per-message editing and resubmission, Settings tabs for members (add/change role/remove) and integrations (create/edit/delete, write-only secret), audit log (`/audit`, ADMIN only).
+- Shared components: `LatestDecision` (latest review + reviewer comment), `LinesInput`, `BriefEditor`, `MembersPanel`, `IntegrationsPanel`, `useAction`, `Notice`.
+
+**Bugs found + fixed during browser testing**
+- `structuredClone` on Vue reactive proxies crashed the brief editor → JSON-safe `clone()`.
+- Success notice rendered inside the block that hides after submit → moved to status row.
+- Review panel fired duplicate requests and could show a stale (older) approval → stable watch key + out-of-order response guard.
+
+**API/DB changes:** none. **New dependencies:** none.
+**Tests:** `pytest` 51 passed; `npm run build` (vue-tsc + vite) passes; Playwright edit-flow script 16/16 checks, 0 JS errors (script kept outside repo; converting it into a committed e2e suite is a next step).
+**Next:** merge Team 1/2 branches; commit a Playwright e2e suite under `frontend/e2e/`.
+
+---
+
 ## 2026-11-08 — Team 3 (Chat 3) — Session 1: foundation + contracts
 
 **Implemented**

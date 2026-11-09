@@ -3,3 +3,5 @@ export const agentLabel = (a?: string) => ({ SAAS_RESEARCH: 'Agent 1 · SaaS res
 export const taskLabel = (t?: string) => ({
   SAAS_OPPORTUNITY_RESEARCH: 'Opportunity research', SAAS_CUSTOMER_RESEARCH: 'Customer research', LOCAL_LEAD_DISCOVERY: 'Local lead discovery',
 })[t ?? ''] ?? t ?? '—'
+/** Deep copy of plain API data (also safe for Vue reactive proxies, unlike structuredClone). */
+export const clone = <T>(v: T): T => (v === undefined ? v : JSON.parse(JSON.stringify(v)))

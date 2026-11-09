@@ -1,6 +1,6 @@
 # Integration Status
 
-**Last updated:** 2026-11-08 · Team 3 (Chat 3) · Contract version: API v1 / Result Bundle 1.0
+**Last updated:** 2026-11-09 · Team 3 (Chat 3) · Contract version: API v1 / Result Bundle 1.0
 Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not implemented · ⛔ Blocked
 
 ## Main platform (Team 3)
@@ -22,7 +22,9 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | OpenAPI schema + generated TS types | ✅ | `docs/openapi.yaml`, `frontend/src/api/schema.d.ts` |
 | `agents/platform_sdk` (client + worker + keepalive) | ✅ | Used by E2E tests |
 | Vue: login/register, dashboard, tasks (both agents), task detail, approval center, ideas, leads+briefs, campaigns+messages, suppression, settings, unsubscribe | ✅ | Browser smoke-tested (Playwright) |
-| Vue: edit idea/brief/message, opportunity curation, members, integrations, audit UI | ⬜ | APIs exist |
+| Vue: edit + resubmit idea / project brief / campaign offer / messages (CHANGES_REQUESTED loop, reviewer comment shown) | ✅ | Browser-tested (Playwright, 16 checks) |
+| Vue: lead detail (contact, legal basis, status moves), opportunity curation, members, integrations (write-only secret), audit log | ✅ | Browser-tested; audit log ADMIN-only route |
+| Vue: member invitations, integration "test connection", audit export | ⬜ | Backend support missing |
 | Docker compose + Dockerfiles | 🟡 | Written, **not built/run yet** |
 | CI workflow | 🟡 | Written, not yet run on GitHub |
 | Agent behaviour in tests | 🧪 | Mock handlers with fixed bundles (`tests/support/bundles.py`) |
@@ -61,7 +63,7 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 ## Next steps — Team 3 (in order)
 1. Push to GitHub, open PR `feature/main-platform` → `main`, confirm CI green.
 2. `docker compose up` end-to-end; fix Dockerfiles if needed.
-3. Frontend: edit/resubmit flows for ideas, briefs, messages (CHANGES_REQUESTED loop); integrations + members screens.
+3. Merge Team 1 / Team 2 branches (worktrees `/home/user/worktrees/agent-*`), resolve their "Requests to Team 3", run combined tests.
 4. httpOnly-cookie refresh token; password reset.
 5. GDPR: data export + erasure endpoint (keep suppression), retention job for stale unconverted leads.
 6. Bounce/complaint webhook → automatic suppression; reply tracking → `REPLIED`.

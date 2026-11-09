@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { api, errorText } from '@/api/client'
 import ErrorBanner from '@/components/ErrorBanner.vue'
+import IntegrationsPanel from '@/components/IntegrationsPanel.vue'
+import MembersPanel from '@/components/MembersPanel.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -15,6 +17,7 @@ const form = ref({
 })
 const error = ref<string | null>(null)
 const saved = ref(false)
+const tab = ref<'workspace' | 'members' | 'integrations'>('workspace')
 
 async function save() {
   error.value = null
@@ -31,9 +34,14 @@ async function save() {
 </script>
 
 <template>
-  <PageHeader title="Workspace settings" subtitle="Sender identity is required before any campaign can launch." />
-  <ErrorBanner :message="error" />
-  <form class="card max-w-2xl space-y-4" @submit.prevent="save">
+  <PageHeader title="Settings" subtitle="Sender identity is required before any campaign can launch." />
+  <div class="mb-4 flex gap-2">
+    <button v-for="t in (['workspace', 'members', 'integrations'] as const)" :key="t" :class="tab === t ? 'btn-primary' : 'btn-secondary'" class="capitalize" @click="tab = t">{{ t }}</button>
+  </div>
+  <MembersPanel v-if="tab === 'members'" />
+  <IntegrationsPanel v-else-if="tab === 'integrations'" />
+  <ErrorBanner v-if="tab === 'workspace'" :message="error" />
+  <form v-if="tab === 'workspace'" class="card max-w-2xl space-y-4" @submit.prevent="save">
     <fieldset :disabled="!auth.isAdmin()" class="grid gap-4 md:grid-cols-2">
       <div class="md:col-span-2"><label class="label">Workspace name</label><input v-model="form.name" class="input" /></div>
       <div><label class="label">Sender name</label><input v-model="form.sender_name" class="input" /></div>

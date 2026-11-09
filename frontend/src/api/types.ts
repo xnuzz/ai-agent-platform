@@ -10,6 +10,7 @@ export type ResearchTask = S['ResearchTask']
 export type ResearchTaskDetail = S['ResearchTaskDetail']
 export type TaskType = S['TaskTypeEnum']
 export type Opportunity = S['Opportunity']
+export type Evidence = S['Evidence']
 export type SoftwareIdea = S['SoftwareIdea']
 export type Lead = S['Lead']
 export type ProjectBrief = S['ProjectBrief']
@@ -32,3 +33,6 @@ export interface DashboardSummary {
   campaigns: Record<string, number>
   outreach_messages: Record<string, number>
 }
+export type Membership = S['Membership']
+export type Integration = S['Integration']
+export type Role = S['RoleEnum']

@@ -14,6 +14,7 @@ const nav = [
   { to: '/campaigns', label: 'Campaigns' },
   { to: '/suppression', label: 'Suppression list' },
   { to: '/settings', label: 'Settings' },
+  { to: '/audit', label: 'Audit log', admin: true },
 ]
 const wsId = computed({
   get: () => auth.current?.id ?? '',
@@ -31,9 +32,9 @@ function logout() { auth.logout(); router.push({ name: 'login' }) }
         <option v-for="w in auth.workspaces" :key="w.id" :value="w.id">{{ w.name }}</option>
       </select>
       <nav class="flex flex-1 flex-col gap-1">
-        <RouterLink v-for="n in nav" :key="n.to" :to="n.to"
+        <RouterLink v-for="n in nav.filter((x) => !x.admin || auth.isAdmin())" :key="n.to" :to="n.to"
           class="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-          exact-active-class="bg-indigo-50 font-medium text-indigo-700">{{ n.label }}</RouterLink>
+          :active-class="n.to === '/' ? '' : 'bg-indigo-50 font-medium text-indigo-700'" exact-active-class="bg-indigo-50 font-medium text-indigo-700">{{ n.label }}</RouterLink>
       </nav>
       <div class="border-t border-slate-200 pt-4 text-xs text-slate-500">
         <div class="truncate">{{ auth.user?.email }}</div>
