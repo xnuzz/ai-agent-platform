@@ -31,7 +31,8 @@ Only the backend writes these tables. "Producer" = who supplies the data (via AP
 
 ## Personal data (GDPR)
 Personal data lives only in: `User`, `Lead.contact_*`, `OutreachMessage.to_email`, `SuppressionEntry.value` (EMAIL/PHONE), `AuditEvent.ip_address`. `Business` holds public business data. Agents should prefer `GENERIC_BUSINESS` addresses and record `legal_basis` + `legal_basis_note` per lead.
-Retention/erasure tooling is **not implemented yet** (see INTEGRATION_STATUS). Suppression entries must be kept on erasure (that is their purpose).
+Data-subject tooling (`apps/privacy`): **export** and **erasure** by email (ADMIN+, audited by a pseudonymous `subject_ref`, never the address). Erasure keeps one `SuppressionEntry(EMAIL, LEGAL_REQUEST)` — the minimum needed to never contact the person again.
+**Retention:** `Workspace.data_retention_days` (default 365, 0 = off). A daily Celery beat job anonymizes contact fields on leads idle longer than that, except `CONTACTED`/`REPLIED`/`WON`, and cancels + redacts their unsent messages.
 
 ## Migration rules
 - Only Team 3 creates migrations for `backend/`. Agent teams request schema changes via `INTEGRATION_STATUS.md` → "Requests to Team 3".

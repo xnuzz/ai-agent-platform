@@ -58,6 +58,8 @@ Roles: read = VIEWER+, write = DEVELOPER+ unless noted.
 | `GET/POST/PATCH/DELETE integrations/` | ADMIN+ for writes; `secret` write-only → `has_secret` |
 | `GET audit-events/` | ADMIN+ |
 | `GET dashboard/summary/` | counts by status per entity |
+| `POST privacy/export/` | ADMIN+; `{email}` → all personal data about that address in the workspace (JSON) |
+| `POST privacy/erase/` | ADMIN+; `{email, confirm: true}` → anonymize leads, redact messages, clear business email, add `LEGAL_REQUEST` suppression → `{leads_anonymized, messages_redacted, businesses_updated, suppressed}` |
 | `GET/POST public/unsubscribe/{token}/` | public, throttled; GET preview, POST opt-out (RFC 8058 compatible) |
 
 `decide` options for `SOFTWARE_IDEA`: `{"auto_continue": true, "customer_research_input": {"max_leads": 25, "regions": ["DE"]}}` → response `outcome.follow_up_task_id`.

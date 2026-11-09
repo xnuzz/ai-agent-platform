@@ -802,6 +802,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/privacy/erase/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ADMIN+ only. Data-subject requests are scoped to the current workspace. */
+        post: operations["v1_privacy_erase_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/privacy/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ADMIN+ only. Data-subject requests are scoped to the current workspace. */
+        post: operations["v1_privacy_export_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/project-briefs/": {
         parameters: {
             query?: never;
@@ -1401,6 +1435,18 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        EraseRequest: {
+            /** Format: email */
+            email: string;
+            /** @description Must be true. Erasure cannot be undone. */
+            confirm: boolean;
+        };
+        EraseResult: {
+            leads_anonymized: number;
+            messages_redacted: number;
+            businesses_updated: number;
+            suppressed: boolean;
+        };
         Evidence: {
             /** Format: uuid */
             readonly id: string;
@@ -1995,6 +2041,7 @@ export interface components {
             sender_postal_address?: string;
             consent_required_countries?: unknown;
             daily_send_limit?: number;
+            data_retention_days?: number;
         };
         ProblemItemRequest: {
             code: string;
@@ -2269,6 +2316,10 @@ export interface components {
          * @enum {string}
          */
         SourceTypeEnum: "SAAS_RESEARCH" | "LOCAL_LEADS" | "MANUAL";
+        SubjectRequest: {
+            /** Format: email */
+            email: string;
+        };
         SubmitForApprovalRequest: {
             /** @default  */
             summary: string;
@@ -2383,6 +2434,7 @@ export interface components {
             sender_postal_address?: string;
             consent_required_countries?: unknown;
             daily_send_limit?: number;
+            data_retention_days?: number;
             readonly sender_identity_complete: boolean;
         };
         WorkspaceRequest: {
@@ -2394,6 +2446,7 @@ export interface components {
             sender_postal_address?: string;
             consent_required_countries?: unknown;
             daily_send_limit?: number;
+            data_retention_days?: number;
         };
     };
     responses: never;
@@ -3724,6 +3777,55 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OutreachMessage"];
                 };
+            };
+        };
+    };
+    v1_privacy_erase_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EraseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EraseRequest"];
+                "multipart/form-data": components["schemas"]["EraseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EraseResult"];
+                };
+            };
+        };
+    };
+    v1_privacy_export_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubjectRequest"];
+                "multipart/form-data": components["schemas"]["SubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description All personal data held about the email in this workspace (leads, messages, businesses, suppression entries). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -1770,6 +1770,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/OutreachMessage'
           description: ''
+  /api/v1/privacy/erase/:
+    post:
+      operationId: v1_privacy_erase_create
+      description: ADMIN+ only. Data-subject requests are scoped to the current workspace.
+      tags:
+      - privacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EraseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EraseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EraseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EraseResult'
+          description: ''
+  /api/v1/privacy/export/:
+    post:
+      operationId: v1_privacy_export_create
+      description: ADMIN+ only. Data-subject requests are scoped to the current workspace.
+      tags:
+      - privacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubjectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: All personal data held about the email in this workspace (leads,
+            messages, businesses, suppression entries).
   /api/v1/project-briefs/:
     get:
       operationId: v1_project_briefs_list
@@ -3324,6 +3375,35 @@ components:
             {...}}'
       required:
       - decision
+    EraseRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        confirm:
+          type: boolean
+          description: Must be true. Erasure cannot be undone.
+      required:
+      - confirm
+      - email
+    EraseResult:
+      type: object
+      properties:
+        leads_anonymized:
+          type: integer
+        messages_redacted:
+          type: integer
+        businesses_updated:
+          type: integer
+        suppressed:
+          type: boolean
+      required:
+      - businesses_updated
+      - leads_anonymized
+      - messages_redacted
+      - suppressed
     Evidence:
       type: object
       properties:
@@ -4583,6 +4663,10 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+        data_retention_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
     ProblemItemRequest:
       type: object
       properties:
@@ -5320,6 +5404,15 @@ components:
         * `SAAS_RESEARCH` - Agent 1
         * `LOCAL_LEADS` - Agent 2
         * `MANUAL` - Manual (user)
+    SubjectRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     SubmitForApprovalRequest:
       type: object
       properties:
@@ -5593,6 +5686,10 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+        data_retention_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
         sender_identity_complete:
           type: boolean
           readOnly: true
@@ -5634,6 +5731,10 @@ components:
           type: string
         consent_required_countries: {}
         daily_send_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        data_retention_days:
           type: integer
           maximum: 2147483647
           minimum: 0

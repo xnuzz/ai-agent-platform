@@ -22,15 +22,16 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | OpenAPI schema + generated TS types | ✅ | `docs/openapi.yaml`, `frontend/src/api/schema.d.ts` |
 | `agents/platform_sdk` (client + worker + keepalive) | ✅ | Used by E2E tests |
 | Vue: login/register, dashboard, tasks (both agents), task detail, approval center, ideas, leads+briefs, campaigns+messages, suppression, settings, unsubscribe | ✅ | Browser smoke-tested (Playwright) |
+| Browser e2e suite (`frontend/e2e`, Playwright, 9 tests, mock agents) | ✅ | Runs in CI `e2e` job |
 | Vue: edit + resubmit idea / project brief / campaign offer / messages (CHANGES_REQUESTED loop, reviewer comment shown) | ✅ | Browser-tested (Playwright, 16 checks) |
 | Vue: lead detail (contact, legal basis, status moves), opportunity curation, members, integrations (write-only secret), audit log | ✅ | Browser-tested; audit log ADMIN-only route |
 | Vue: member invitations, integration "test connection", audit export | ⬜ | Backend support missing |
-| Docker compose + Dockerfiles | 🟡 | Written, **not built/run yet** |
-| CI workflow | 🟡 | Written, not yet run on GitHub |
+| Docker compose + Dockerfiles | ⛔ | Written, never built: no Docker daemon in the dev container. Needs a machine with Docker |
+| CI workflow (backend, frontend, browser e2e) | ✅ | Green on GitHub for PR #1; e2e job added 2026-11-09 |
 | Agent behaviour in tests | 🧪 | Mock handlers with fixed bundles (`tests/support/bundles.py`) |
 | Email in dev/test | 🧪 | console / locmem backend — nothing is really sent |
 | Follow-up sequences (step>1), reply/bounce webhooks | ⬜ | v2 (ADR-008) |
-| GDPR export/erasure, retention job | ⬜ | |
+| GDPR export + erasure (API + Settings › Privacy), retention job (daily, per-workspace days) | ✅ | 5 unit tests + browser test |
 | Per-workspace LLM keys delivered to agents | ⬜ | Agents use env vars for now |
 | httpOnly refresh cookie, password reset, email verification | ⬜ | |
 | Live updates (SSE/WebSocket) | ⬜ | UI polls every 3–5 s |
@@ -103,10 +104,10 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 - No throttling on agent endpoints (tokens are trusted service credentials).
 
 ## Next steps — Team 3 (in order)
-1. Push to GitHub, open PR `feature/main-platform` → `main`, confirm CI green.
+1. ✅ Done 2026-11-09: pushed to `xnuzz/ai-agent-platform`, PR #1 merged with green CI.
 2. `docker compose up` end-to-end; fix Dockerfiles if needed.
 3. ✅ Done 2026-11-09: Team 1 + Team 2 merged into `feature/main-platform`; all their requests resolved; combined suite 203 passed.
 4. httpOnly-cookie refresh token; password reset.
-5. GDPR: data export + erasure endpoint (keep suppression), retention job for stale unconverted leads.
+5. ✅ Done 2026-11-09: GDPR export/erasure + retention job.
 6. Bounce/complaint webhook → automatic suppression; reply tracking → `REPLIED`.
 7. Review Team 1/2 PRs against contracts; extend E2E tests with real agent code paths.

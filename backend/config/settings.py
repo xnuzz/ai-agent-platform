@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.approvals",
     "apps.integrations",
     "apps.dashboard",
+    "apps.privacy",
 ]
 
 MIDDLEWARE = [
@@ -159,6 +160,7 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_BEAT_SCHEDULE = {
     "reap-expired-agent-leases": {"task": "orchestration.reap_expired_leases", "schedule": 60.0},
     "resume-active-campaigns": {"task": "outreach.resume_active_campaigns", "schedule": 300.0},
+    "purge-stale-contacts": {"task": "privacy.purge_stale_contacts", "schedule": 86400.0},
 }
 
 # --- Email / outreach ---

@@ -13,6 +13,7 @@ from apps.integrations.views import IntegrationViewSet
 from apps.leads.views import BusinessViewSet, LeadViewSet, ProjectBriefViewSet
 from apps.orchestration import views as orch
 from apps.outreach.views import CampaignViewSet, OutreachMessageViewSet, SuppressionEntryViewSet, UnsubscribeView
+from apps.privacy.views import EraseView, ExportView
 from apps.research.views import EvidenceViewSet, OpportunityViewSet, SoftwareIdeaViewSet
 
 
@@ -53,6 +54,8 @@ api_v1 = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="auth-token-refresh"),
     path("auth/me/", MeView.as_view(), name="auth-me"),
     path("dashboard/summary/", DashboardSummaryView.as_view(), name="dashboard-summary"),
+    path("privacy/export/", ExportView.as_view(), name="privacy-export"),
+    path("privacy/erase/", EraseView.as_view(), name="privacy-erase"),
     path("public/unsubscribe/<str:token>/", UnsubscribeView.as_view(), name="public-unsubscribe"),
     path("agent/", include(agent_patterns)),
     path("", include(router.urls)),

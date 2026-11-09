@@ -23,7 +23,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         fields = (
             "id", "name", "slug", "role", "created_at",
             "sender_name", "sender_email", "reply_to_email", "sender_company", "sender_postal_address",
-            "consent_required_countries", "daily_send_limit", "sender_identity_complete",
+            "consent_required_countries", "daily_send_limit", "data_retention_days", "sender_identity_complete",
         )
         read_only_fields = ("id", "slug", "role", "created_at", "sender_identity_complete")
 
