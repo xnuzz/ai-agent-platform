@@ -61,8 +61,22 @@ Roles: read = VIEWER+, write = DEVELOPER+ unless noted.
 | `POST privacy/export/` | ADMIN+; `{email}` → all personal data about that address in the workspace (JSON) |
 | `POST privacy/erase/` | ADMIN+; `{email, confirm: true}` → anonymize leads, redact messages, clear business email, add `LEGAL_REQUEST` suppression → `{leads_anonymized, messages_redacted, businesses_updated, suppressed}` |
 | `GET/POST public/unsubscribe/{token}/` | public, throttled; GET preview, POST opt-out (RFC 8058 compatible) |
+| `POST webhooks/email-events/` | inbound email events, HMAC-signed (see below); 503 until `EMAIL_WEBHOOK_SECRET` is set |
 
 `decide` options for `SOFTWARE_IDEA`: `{"auto_continue": true, "customer_research_input": {"max_leads": 25, "regions": ["DE"]}}` → response `outcome.follow_up_task_id`.
+
+### Inbound email events (webhook)
+Provider-neutral. A provider adapter or relay must translate SES/Mailgun/Postmark payloads to this format (**adapters not implemented**).
+```
+POST /api/v1/webhooks/email-events/
+X-Webhook-Timestamp: <unix seconds>            # rejected if more than 300 s off (replay protection)
+X-Webhook-Signature: sha256=<hex HMAC-SHA256(EMAIL_WEBHOOK_SECRET, "<timestamp>.<raw body>")>
+{"events": [{"type": "BOUNCE|COMPLAINT|UNSUBSCRIBE|REPLY|DELIVERED", "email": "...", "message_id": "<Message-ID>",
+             "bounce_type": "HARD|SOFT", "occurred_at": "..."}]}
+→ 200 {"processed", "suppressed", "replies", "unmatched", "ignored"} · 401 bad/expired signature · 503 disabled
+```
+Matching: `message_id` = the `Message-ID` header we sent (stored as `OutreachMessage.provider_message_id`); else every sent message to `email`.
+Effects: HARD `BOUNCE` → suppression `BOUNCE`; `COMPLAINT` → `COMPLAINT`; `UNSUBSCRIBE` → `OPT_OUT` (all source `SYSTEM`, idempotent); `REPLY` → lead `CONTACTED → REPLIED`; SOFT bounce and `DELIVERED` are ignored in v1.
 
 ## Agent API (`Authorization: Agent agt_<prefix>_<secret>`)
 Use `agents/platform_sdk` — it implements all of this. Writes to a task require header **`X-Lease-Id`** = `lease_id` from the claim.

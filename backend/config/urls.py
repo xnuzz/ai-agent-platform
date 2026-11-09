@@ -12,7 +12,9 @@ from apps.dashboard.views import DashboardSummaryView
 from apps.integrations.views import IntegrationViewSet
 from apps.leads.views import BusinessViewSet, LeadViewSet, ProjectBriefViewSet
 from apps.orchestration import views as orch
-from apps.outreach.views import CampaignViewSet, OutreachMessageViewSet, SuppressionEntryViewSet, UnsubscribeView
+from apps.outreach.views import (
+    CampaignViewSet, EmailEventsWebhookView, OutreachMessageViewSet, SuppressionEntryViewSet, UnsubscribeView,
+)
 from apps.privacy.views import EraseView, ExportView
 from apps.research.views import EvidenceViewSet, OpportunityViewSet, SoftwareIdeaViewSet
 
@@ -57,6 +59,7 @@ api_v1 = [
     path("privacy/export/", ExportView.as_view(), name="privacy-export"),
     path("privacy/erase/", EraseView.as_view(), name="privacy-erase"),
     path("public/unsubscribe/<str:token>/", UnsubscribeView.as_view(), name="public-unsubscribe"),
+    path("webhooks/email-events/", EmailEventsWebhookView.as_view(), name="webhook-email-events"),
     path("agent/", include(agent_patterns)),
     path("", include(router.urls)),
 ]

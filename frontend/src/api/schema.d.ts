@@ -1115,6 +1115,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhooks/email-events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Provider-neutral inbound email events. HMAC-signed; see apps/outreach/webhooks.py for the contract. */
+        post: operations["v1_webhooks_email_events_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/": {
         parameters: {
             query?: never;
@@ -1275,6 +1292,12 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `HARD` - HARD
+         *     * `SOFT` - SOFT
+         * @enum {string}
+         */
+        BounceTypeEnum: "HARD" | "SOFT";
         Business: {
             /** Format: uuid */
             readonly id: string;
@@ -1434,6 +1457,27 @@ export interface components {
             options?: {
                 [key: string]: unknown;
             };
+        };
+        EmailEventRequest: {
+            type: components["schemas"]["EmailEventTypeEnum"];
+            email?: string;
+            /** @default  */
+            message_id: string;
+            bounce_type?: components["schemas"]["BounceTypeEnum"];
+            /** Format: date-time */
+            occurred_at?: string;
+        };
+        /**
+         * @description * `BOUNCE` - BOUNCE
+         *     * `COMPLAINT` - COMPLAINT
+         *     * `UNSUBSCRIBE` - UNSUBSCRIBE
+         *     * `REPLY` - REPLY
+         *     * `DELIVERED` - DELIVERED
+         * @enum {string}
+         */
+        EmailEventTypeEnum: "BOUNCE" | "COMPLAINT" | "UNSUBSCRIBE" | "REPLY" | "DELIVERED";
+        EmailEventsRequest: {
+            events: components["schemas"]["EmailEventRequest"][];
         };
         EraseRequest: {
             /** Format: email */
@@ -4346,6 +4390,30 @@ export interface operations {
         responses: {
             /** @description No response body */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_webhooks_email_events_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailEventsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EmailEventsRequest"];
+                "multipart/form-data": components["schemas"]["EmailEventsRequest"];
+            };
+        };
+        responses: {
+            /** @description {"processed", "suppressed", "replies", "unmatched", "ignored"} */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

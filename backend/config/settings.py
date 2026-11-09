@@ -124,7 +124,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
-    "DEFAULT_THROTTLE_RATES": {"auth": "20/min", "public": "30/min"},
+    "DEFAULT_THROTTLE_RATES": {"auth": "20/min", "public": "30/min", "webhook": "600/min"},
 }
 
 SIMPLE_JWT = {
@@ -176,6 +176,9 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@localhost")
 PUBLIC_APP_URL = env("PUBLIC_APP_URL", "http://localhost:5173").rstrip("/")
 # Public base URL of this API; used for RFC 8058 List-Unsubscribe headers.
 PUBLIC_API_URL = env("PUBLIC_API_URL", "http://localhost:8000").rstrip("/")
+
+# Shared secret for HMAC-signed inbound email events (bounces/complaints/replies). Empty = endpoint disabled.
+EMAIL_WEBHOOK_SECRET = env("EMAIL_WEBHOOK_SECRET", "")
 
 # Fernet key for encrypting integration secrets at rest. Required to store secrets.
 FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", "")

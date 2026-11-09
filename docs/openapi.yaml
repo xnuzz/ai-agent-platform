@@ -2525,6 +2525,30 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/webhooks/email-events/:
+    post:
+      operationId: v1_webhooks_email_events_create
+      description: Provider-neutral inbound email events. HMAC-signed; see apps/outreach/webhooks.py
+        for the contract.
+      tags:
+      - webhooks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailEventsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailEventsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailEventsRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          description: '{"processed", "suppressed", "replies", "unmatched", "ignored"}'
   /api/v1/workspaces/:
     get:
       operationId: v1_workspaces_list
@@ -2965,6 +2989,14 @@ components:
       - metadata
       - target_id
       - target_type
+    BounceTypeEnum:
+      enum:
+      - HARD
+      - SOFT
+      type: string
+      description: |-
+        * `HARD` - HARD
+        * `SOFT` - SOFT
     Business:
       type: object
       properties:
@@ -3375,6 +3407,52 @@ components:
             {...}}'
       required:
       - decision
+    EmailEventRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/EmailEventTypeEnum'
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        message_id:
+          type: string
+          default: ''
+          maxLength: 300
+        bounce_type:
+          $ref: '#/components/schemas/BounceTypeEnum'
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - type
+    EmailEventTypeEnum:
+      enum:
+      - BOUNCE
+      - COMPLAINT
+      - UNSUBSCRIBE
+      - REPLY
+      - DELIVERED
+      type: string
+      description: |-
+        * `BOUNCE` - BOUNCE
+        * `COMPLAINT` - COMPLAINT
+        * `UNSUBSCRIBE` - UNSUBSCRIBE
+        * `REPLY` - REPLY
+        * `DELIVERED` - DELIVERED
+    EmailEventsRequest:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailEventRequest'
+      required:
+      - events
     EraseRequest:
       type: object
       properties:

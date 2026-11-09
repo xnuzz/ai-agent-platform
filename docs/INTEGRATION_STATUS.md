@@ -30,7 +30,9 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | CI workflow (backend, frontend, browser e2e) | ✅ | Green on GitHub for PR #1; e2e job added 2026-11-09 |
 | Agent behaviour in tests | 🧪 | Mock handlers with fixed bundles (`tests/support/bundles.py`) |
 | Email in dev/test | 🧪 | console / locmem backend — nothing is really sent |
-| Follow-up sequences (step>1), reply/bounce webhooks | ⬜ | v2 (ADR-008) |
+| Inbound email events webhook: hard bounce / complaint / unsubscribe → suppression, reply → lead REPLIED | ✅ | HMAC + timestamp signed; 7 tests |
+| Provider adapters for that webhook (SES, Mailgun, Postmark) | ⬜ | Need a relay or adapter per provider |
+| Follow-up sequences (step > 1) | ⬜ | v2 (ADR-008); reply detection now exists via webhook |
 | GDPR export + erasure (API + Settings › Privacy), retention job (daily, per-workspace days) | ✅ | 5 unit tests + browser test |
 | Per-workspace LLM keys delivered to agents | ⬜ | Agents use env vars for now |
 | httpOnly refresh cookie, password reset, email verification | ⬜ | |
@@ -109,5 +111,5 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 3. ✅ Done 2026-11-09: Team 1 + Team 2 merged into `feature/main-platform`; all their requests resolved; combined suite 203 passed.
 4. httpOnly-cookie refresh token; password reset.
 5. ✅ Done 2026-11-09: GDPR export/erasure + retention job.
-6. Bounce/complaint webhook → automatic suppression; reply tracking → `REPLIED`.
+6. ✅ Done 2026-11-09: signed email-events webhook (bounce/complaint/unsubscribe/reply). Next: a provider adapter for whichever ESP is chosen.
 7. Review Team 1/2 PRs against contracts; extend E2E tests with real agent code paths.
