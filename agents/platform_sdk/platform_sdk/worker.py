@@ -24,6 +24,10 @@ class RetryableError(Exception):
     """Raise from a handler for transient failures (rate limits, provider outage) -> task is re-queued."""
 
 
+class InvalidInputError(Exception):
+    """Raise from a handler when the task input/context cannot be acted on -> fail(code="invalid_input"), no retry."""
+
+
 class TaskContext:
     def __init__(self, client: PlatformClient, task: Task):
         self.client, self.task = client, task
@@ -97,6 +101,9 @@ class AgentWorker:
         except RetryableError as exc:
             stop.set()
             self._safe_fail(task, "retryable_error", str(exc), retryable=True)
+        except InvalidInputError as exc:
+            stop.set()
+            self._safe_fail(task, "invalid_input", str(exc))
         except Exception as exc:  # noqa: BLE001
             stop.set()
             logger.exception("handler failed for task %s", task.id)

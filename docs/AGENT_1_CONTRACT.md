@@ -58,7 +58,7 @@ Expectations:
 `PLANNING`, `SEARCHING`, `ANALYZING_COMPETITORS`, `SCORING`, `GENERATING_IDEAS`, `FINDING_CUSTOMERS`, `DRAFTING_OUTREACH`, `SUBMITTING`.
 
 ## Failure codes (`fail.code`)
-`CANCELLED` (after `TaskCancelled`), `retryable_error` (+`retryable: true`) for rate limits/outages, `agent_error` for bugs, `invalid_input` for inputs you can't act on. SDK maps exceptions automatically.
+`CANCELLED` (after `TaskCancelled`), `retryable_error` (+`retryable: true`) for rate limits/outages, `agent_error` for bugs, `invalid_input` for inputs you can't act on (raise `platform_sdk.InvalidInputError`). SDK maps exceptions automatically.
 
 ## Minimal handler
 ```python

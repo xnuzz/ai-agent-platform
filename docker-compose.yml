@@ -1,4 +1,5 @@
-# Local development stack. Agent workers are added by Team 1 / Team 2 (see docs/INTEGRATION_STATUS.md).
+# Local development stack. Agent workers are opt-in: `docker compose --profile agents up`
+# (create tokens first: docker compose exec backend python manage.py create_agent_token ...).
 services:
   db:
     image: postgres:16-alpine
@@ -38,6 +39,20 @@ services:
     environment: {VITE_API_URL: "http://localhost:8000"}
     volumes: ["./frontend:/app", "/app/node_modules"]
     ports: ["5173:5173"]
+
+  agent1:
+    profiles: [agents]
+    build: {context: ., dockerfile: agents/agent_1_saas_research/Dockerfile}
+    environment:
+      PLATFORM_API_URL: http://backend:8000
+      PLATFORM_AGENT_TOKEN: ${AGENT_1_PLATFORM_TOKEN:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5-5}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      SEARCH_PROVIDER: ${AGENT_1_SEARCH_PROVIDER:-brave}
+      SEARCH_API_KEY: ${AGENT_1_SEARCH_API_KEY:-}
+    depends_on: [backend]
+    restart: unless-stopped
 
 volumes:
   pgdata:

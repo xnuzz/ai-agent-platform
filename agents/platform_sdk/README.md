@@ -21,3 +21,5 @@ AgentWorker(PlatformClient.from_env(), {"SAAS_OPPORTUNITY_RESEARCH": research}).
 Env: `PLATFORM_API_URL` (e.g. `http://backend:8000`), `PLATFORM_AGENT_TOKEN` (from `manage.py create_agent_token`).
 
 Install: `pip install -e agents/platform_sdk`.
+
+Handler exceptions → task outcome: `TaskCancelled` → CANCELLED · `RetryableError` → re-queued (until max attempts) · `InvalidInputError` → FAILED `invalid_input` · anything else → FAILED `agent_error`.

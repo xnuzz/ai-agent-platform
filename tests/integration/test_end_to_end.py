@@ -8,7 +8,7 @@ from django.core import mail
 
 from apps.common.enums import AgentType
 from apps.orchestration.models import AgentToken
-from platform_sdk import AgentWorker, PlatformClient, TaskContext
+from platform_sdk import AgentWorker, InvalidInputError, PlatformClient, TaskContext
 from support.factories import customer_bundle, local_leads_bundle, make_user, make_workspace, opportunity_bundle
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -147,6 +147,16 @@ def test_agent_failure_and_cancellation_reported(live_server):
     def cancellable(ctx):
         user.post(f"research-tasks/{ctx.task.id}/cancel/")
         ctx.progress(10)  # raises TaskCancelled
+
+    def bad_input(ctx):
+        raise InvalidInputError("industry is not researchable")
+
+    agent.handlers = {"SAAS_OPPORTUNITY_RESEARCH": bad_input}
+    t = user.post("research-tasks/", {"task_type": "SAAS_OPPORTUNITY_RESEARCH", "input": {"industry": "z"}})
+    agent.run_once()
+    t = user.get(f"research-tasks/{t['id']}/")
+    assert t["status"] == "FAILED" and t["error"] == {"code": "invalid_input", "message": "industry is not researchable",
+                                                      "retryable": False}
 
     agent.handlers = {"SAAS_OPPORTUNITY_RESEARCH": cancellable}
     t = user.post("research-tasks/", {"task_type": "SAAS_OPPORTUNITY_RESEARCH", "input": {"industry": "y"}})
