@@ -1,8 +1,8 @@
 from django.core import signing
-from drf_spectacular.utils import extend_schema
-from rest_framework import mixins, viewsets
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import AuthenticationFailed, NotFound
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -153,3 +153,44 @@ class UnsubscribeView(APIView):
         data = self._data(token)
         services.process_unsubscribe(token)
         return Response({"email_masked": _mask(data["e"]), "sender": "", "already_unsubscribed": True})
+
+
+class EmailEventSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["BOUNCE", "COMPLAINT", "UNSUBSCRIBE", "REPLY", "DELIVERED"])
+    email = serializers.EmailField(required=False, allow_blank=True, default="")
+    message_id = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
+    bounce_type = serializers.ChoiceField(choices=["HARD", "SOFT"], required=False)
+    occurred_at = serializers.DateTimeField(required=False)
+
+
+class EmailEventsSerializer(serializers.Serializer):
+    events = EmailEventSerializer(many=True, max_length=1000)
+
+
+class EmailEventsWebhookView(APIView):
+    """Provider-neutral inbound email events. HMAC-signed; see apps/outreach/webhooks.py for the contract."""
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "webhook"
+
+    def get_authenticate_header(self, request):
+        return 'HMAC-SHA256 realm="email-events"'  # makes signature failures a proper 401, not 403
+
+    @extend_schema(request=EmailEventsSerializer, responses=OpenApiResponse(
+        description='{"processed", "suppressed", "replies", "unmatched", "ignored"}'), tags=["webhooks"])
+    def post(self, request):
+        from django.conf import settings
+
+        from . import webhooks
+
+        if not settings.EMAIL_WEBHOOK_SECRET:
+            return Response({"error": {"code": "webhook_disabled", "message": "EMAIL_WEBHOOK_SECRET is not set.",
+                                       "details": {}}}, status=503)
+        if not webhooks.verify_signature(request.body, request.headers.get("X-Webhook-Timestamp", ""),
+                                         request.headers.get("X-Webhook-Signature", "")):
+            raise AuthenticationFailed("Invalid or expired webhook signature.")
+        ser = EmailEventsSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        return Response(webhooks.process_events(ser.validated_data["events"]))

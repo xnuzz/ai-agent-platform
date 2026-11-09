@@ -3,8 +3,10 @@ from django.http import JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from apps.accounts.auth_views import (
+    LoginView, LogoutView, PasswordChangeView, PasswordResetConfirmView, PasswordResetRequestView, RefreshView,
+)
 from apps.accounts.views import MembershipViewSet, MeView, RegisterView, WorkspaceViewSet
 from apps.approvals.views import ApprovalViewSet
 from apps.audit.views import AuditEventViewSet
@@ -12,7 +14,10 @@ from apps.dashboard.views import DashboardSummaryView
 from apps.integrations.views import IntegrationViewSet
 from apps.leads.views import BusinessViewSet, LeadViewSet, ProjectBriefViewSet
 from apps.orchestration import views as orch
-from apps.outreach.views import CampaignViewSet, OutreachMessageViewSet, SuppressionEntryViewSet, UnsubscribeView
+from apps.outreach.views import (
+    CampaignViewSet, EmailEventsWebhookView, OutreachMessageViewSet, SuppressionEntryViewSet, UnsubscribeView,
+)
+from apps.privacy.views import EraseView, ExportView
 from apps.research.views import EvidenceViewSet, OpportunityViewSet, SoftwareIdeaViewSet
 
 
@@ -49,11 +54,18 @@ agent_patterns = [
 
 api_v1 = [
     path("auth/register/", RegisterView.as_view(), name="auth-register"),
-    path("auth/token/", TokenObtainPairView.as_view(), name="auth-token"),
-    path("auth/token/refresh/", TokenRefreshView.as_view(), name="auth-token-refresh"),
+    path("auth/token/", LoginView.as_view(), name="auth-token"),
+    path("auth/token/refresh/", RefreshView.as_view(), name="auth-token-refresh"),
+    path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
+    path("auth/password-reset/", PasswordResetRequestView.as_view(), name="auth-password-reset"),
+    path("auth/password-reset/confirm/", PasswordResetConfirmView.as_view(), name="auth-password-reset-confirm"),
+    path("auth/password/change/", PasswordChangeView.as_view(), name="auth-password-change"),
     path("auth/me/", MeView.as_view(), name="auth-me"),
     path("dashboard/summary/", DashboardSummaryView.as_view(), name="dashboard-summary"),
+    path("privacy/export/", ExportView.as_view(), name="privacy-export"),
+    path("privacy/erase/", EraseView.as_view(), name="privacy-erase"),
     path("public/unsubscribe/<str:token>/", UnsubscribeView.as_view(), name="public-unsubscribe"),
+    path("webhooks/email-events/", EmailEventsWebhookView.as_view(), name="webhook-email-events"),
     path("agent/", include(agent_patterns)),
     path("", include(router.urls)),
 ]

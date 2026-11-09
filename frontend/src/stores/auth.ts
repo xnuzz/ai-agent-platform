@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { api, request, session } from '@/api/client'
+import { api, refresh, request, session } from '@/api/client'
 import type { User, Workspace, Paginated } from '@/api/types'
 
 const WS_KEY = 'platform.workspace'
@@ -11,8 +11,8 @@ export const useAuthStore = defineStore('auth', () => {
   const current = ref<Workspace | null>(null)
 
   async function login(email: string, password: string) {
-    const t = await request<{ access: string; refresh: string }>('POST', 'auth/token/', { email, password }, { auth: false })
-    session.setTokens(t)
+    const t = await request<{ access: string }>('POST', 'auth/token/', { email, password }, { auth: false })
+    session.setAccess(t.access)
     await bootstrap()
   }
 
@@ -21,8 +21,9 @@ export const useAuthStore = defineStore('auth', () => {
     await login(payload.email, payload.password)
   }
 
+  /** Restores the session from the httpOnly refresh cookie (page reload) and loads user + workspaces. */
   async function bootstrap() {
-    if (!session.hasTokens()) return
+    if (!session.hasAccess() && !(await refresh())) return
     user.value = await api.get<User>('auth/me/')
     workspaces.value = (await api.get<Paginated<Workspace>>('workspaces/')).results
     const saved = localStorage.getItem(WS_KEY)
@@ -42,9 +43,13 @@ export const useAuthStore = defineStore('auth', () => {
     current.value = ws
   }
 
-  function logout() {
-    session.setTokens(null)
+  /** Clears local state; pass server=true to also revoke the refresh cookie (user-initiated sign out). */
+  async function logout(server = false) {
+    // Await the revoke: navigating away while it is in flight could cancel it and leave the cookie valid.
+    if (server) await request('POST', 'auth/logout/', {}, { auth: false }).catch(() => {})
+    session.setAccess(null)
     user.value = null
+    workspaces.value = []
     selectWorkspace(null)
   }
 

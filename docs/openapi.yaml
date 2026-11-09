@@ -452,6 +452,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuditEvent'
           description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
   /api/v1/auth/me/:
     get:
       operationId: v1_auth_me_retrieve
@@ -466,6 +476,73 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+  /api/v1/auth/password-reset/:
+    post:
+      operationId: v1_auth_password_reset_create
+      description: Always 202 (never reveals whether the account exists).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          description: No response body
+  /api/v1/auth/password-reset/confirm/:
+    post:
+      operationId: v1_auth_password_reset_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/password/change/:
+    post:
+      operationId: v1_auth_password_change_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/auth/register/:
     post:
       operationId: v1_auth_register_create
@@ -496,11 +573,8 @@ paths:
   /api/v1/auth/token/:
     post:
       operationId: v1_auth_token_create
-      description: |-
-        Takes a set of user credentials and returns an access and refresh JSON web
-        token pair to prove the authentication of those credentials.
       tags:
-      - v1
+      - auth
       requestBody:
         content:
           application/json:
@@ -513,39 +587,29 @@ paths:
             schema:
               $ref: '#/components/schemas/TokenObtainPairRequest'
         required: true
+      security:
+      - {}
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenObtainPair'
+                $ref: '#/components/schemas/AccessToken'
           description: ''
   /api/v1/auth/token/refresh/:
     post:
       operationId: v1_auth_token_refresh_create
-      description: |-
-        Takes a refresh type JSON web token and returns an access type JSON web
-        token if the refresh token is valid.
+      description: Uses the httpOnly refresh cookie; rotates it.
       tags:
-      - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
-        required: true
+      - auth
+      security:
+      - {}
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenRefresh'
+                $ref: '#/components/schemas/AccessToken'
           description: ''
   /api/v1/businesses/:
     get:
@@ -1770,6 +1834,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/OutreachMessage'
           description: ''
+  /api/v1/privacy/erase/:
+    post:
+      operationId: v1_privacy_erase_create
+      description: ADMIN+ only. Data-subject requests are scoped to the current workspace.
+      tags:
+      - privacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EraseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EraseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EraseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EraseResult'
+          description: ''
+  /api/v1/privacy/export/:
+    post:
+      operationId: v1_privacy_export_create
+      description: ADMIN+ only. Data-subject requests are scoped to the current workspace.
+      tags:
+      - privacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubjectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: All personal data held about the email in this workspace (leads,
+            messages, businesses, suppression entries).
   /api/v1/project-briefs/:
     get:
       operationId: v1_project_briefs_list
@@ -2474,6 +2589,30 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/webhooks/email-events/:
+    post:
+      operationId: v1_webhooks_email_events_create
+      description: Provider-neutral inbound email events. HMAC-signed; see apps/outreach/webhooks.py
+        for the contract.
+      tags:
+      - webhooks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailEventsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailEventsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailEventsRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          description: '{"processed", "suppressed", "replies", "unmatched", "ignored"}'
   /api/v1/workspaces/:
     get:
       operationId: v1_workspaces_list
@@ -2626,6 +2765,13 @@ paths:
           description: ''
 components:
   schemas:
+    AccessToken:
+      type: object
+      properties:
+        access:
+          type: string
+      required:
+      - access
     ActorTypeEnum:
       enum:
       - USER
@@ -2914,6 +3060,14 @@ components:
       - metadata
       - target_id
       - target_type
+    BounceTypeEnum:
+      enum:
+      - HARD
+      - SOFT
+      type: string
+      description: |-
+        * `HARD` - HARD
+        * `SOFT` - SOFT
     Business:
       type: object
       properties:
@@ -3324,6 +3478,81 @@ components:
             {...}}'
       required:
       - decision
+    EmailEventRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/EmailEventTypeEnum'
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        message_id:
+          type: string
+          default: ''
+          maxLength: 300
+        bounce_type:
+          $ref: '#/components/schemas/BounceTypeEnum'
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - type
+    EmailEventTypeEnum:
+      enum:
+      - BOUNCE
+      - COMPLAINT
+      - UNSUBSCRIBE
+      - REPLY
+      - DELIVERED
+      type: string
+      description: |-
+        * `BOUNCE` - BOUNCE
+        * `COMPLAINT` - COMPLAINT
+        * `UNSUBSCRIBE` - UNSUBSCRIBE
+        * `REPLY` - REPLY
+        * `DELIVERED` - DELIVERED
+    EmailEventsRequest:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailEventRequest'
+      required:
+      - events
+    EraseRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        confirm:
+          type: boolean
+          description: Must be true. Erasure cannot be undone.
+      required:
+      - confirm
+      - email
+    EraseResult:
+      type: object
+      properties:
+        leads_anonymized:
+          type: integer
+        messages_redacted:
+          type: integer
+        businesses_updated:
+          type: integer
+        suppressed:
+          type: boolean
+      required:
+      - businesses_updated
+      - leads_anonymized
+      - messages_redacted
+      - suppressed
     Evidence:
       type: object
       properties:
@@ -4414,6 +4643,43 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Workspace'
+    PasswordChangeRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          minLength: 1
+      required:
+      - current_password
+      - new_password
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          minLength: 1
+        token:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          minLength: 1
+      required:
+      - new_password
+      - token
+      - uid
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     PatchedCampaignRequest:
       type: object
       properties:
@@ -4580,6 +4846,10 @@ components:
           type: string
         consent_required_countries: {}
         daily_send_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        data_retention_days:
           type: integer
           maximum: 2147483647
           minimum: 0
@@ -5320,6 +5590,15 @@ components:
         * `SAAS_RESEARCH` - Agent 1
         * `LOCAL_LEADS` - Agent 2
         * `MANUAL` - Manual (user)
+    SubjectRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     SubmitForApprovalRequest:
       type: object
       properties:
@@ -5463,18 +5742,6 @@ components:
         * `SAAS_OPPORTUNITY_RESEARCH` - Agent 1: opportunity research
         * `SAAS_CUSTOMER_RESEARCH` - Agent 1: customer research + outreach prep
         * `LOCAL_LEAD_DISCOVERY` - Agent 2: local lead discovery + brief + outreach prep
-    TokenObtainPair:
-      type: object
-      properties:
-        access:
-          type: string
-          readOnly: true
-        refresh:
-          type: string
-          readOnly: true
-      required:
-      - access
-      - refresh
     TokenObtainPairRequest:
       type: object
       properties:
@@ -5489,25 +5756,6 @@ components:
       required:
       - email
       - password
-    TokenRefresh:
-      type: object
-      properties:
-        access:
-          type: string
-          readOnly: true
-        refresh:
-          type: string
-      required:
-      - access
-      - refresh
-    TokenRefreshRequest:
-      type: object
-      properties:
-        refresh:
-          type: string
-          minLength: 1
-      required:
-      - refresh
     UnsubscribeInfo:
       type: object
       properties:
@@ -5593,6 +5841,10 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+        data_retention_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
         sender_identity_complete:
           type: boolean
           readOnly: true
@@ -5634,6 +5886,10 @@ components:
           type: string
         consent_required_countries: {}
         daily_send_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        data_retention_days:
           type: integer
           maximum: 2147483647
           minimum: 0

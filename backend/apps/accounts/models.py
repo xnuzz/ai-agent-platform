@@ -61,6 +61,8 @@ class Workspace(TimeStampedModel):
     # Countries (ISO alpha-2) where the workspace requires CONSENT legal basis before emailing.
     consent_required_countries = models.JSONField(default=list, blank=True)
     daily_send_limit = models.PositiveIntegerField(default=100)
+    # Retention: contact data on idle, never-contacted leads is anonymized after this many days (0 = off).
+    data_retention_days = models.PositiveIntegerField(default=365)
 
     def __str__(self):
         return self.name

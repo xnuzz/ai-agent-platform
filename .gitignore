@@ -21,3 +21,6 @@ frontend/dist/
 # Local backups
 *.bundle
 *.zip
+# Playwright output
+frontend/test-results/
+frontend/playwright-report/

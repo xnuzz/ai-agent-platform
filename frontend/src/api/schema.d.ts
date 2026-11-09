@@ -209,6 +209,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/logout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_auth_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me/": {
         parameters: {
             query?: never;
@@ -219,6 +235,55 @@ export interface paths {
         get: operations["v1_auth_me_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Always 202 (never reveals whether the account exists). */
+        post: operations["v1_auth_password_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_auth_password_reset_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/change/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_auth_password_change_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -251,10 +316,6 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * @description Takes a set of user credentials and returns an access and refresh JSON web
-         *     token pair to prove the authentication of those credentials.
-         */
         post: operations["v1_auth_token_create"];
         delete?: never;
         options?: never;
@@ -271,10 +332,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * @description Takes a refresh type JSON web token and returns an access type JSON web
-         *     token if the refresh token is valid.
-         */
+        /** @description Uses the httpOnly refresh cookie; rotates it. */
         post: operations["v1_auth_token_refresh_create"];
         delete?: never;
         options?: never;
@@ -802,6 +860,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/privacy/erase/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ADMIN+ only. Data-subject requests are scoped to the current workspace. */
+        post: operations["v1_privacy_erase_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/privacy/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ADMIN+ only. Data-subject requests are scoped to the current workspace. */
+        post: operations["v1_privacy_export_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/project-briefs/": {
         parameters: {
             query?: never;
@@ -1081,6 +1173,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhooks/email-events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Provider-neutral inbound email events. HMAC-signed; see apps/outreach/webhooks.py for the contract. */
+        post: operations["v1_webhooks_email_events_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/": {
         parameters: {
             query?: never;
@@ -1122,6 +1231,9 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccessToken: {
+            access: string;
+        };
         /**
          * @description * `USER` - User
          *     * `AGENT` - Agent
@@ -1241,6 +1353,12 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `HARD` - HARD
+         *     * `SOFT` - SOFT
+         * @enum {string}
+         */
+        BounceTypeEnum: "HARD" | "SOFT";
         Business: {
             /** Format: uuid */
             readonly id: string;
@@ -1400,6 +1518,39 @@ export interface components {
             options?: {
                 [key: string]: unknown;
             };
+        };
+        EmailEventRequest: {
+            type: components["schemas"]["EmailEventTypeEnum"];
+            email?: string;
+            /** @default  */
+            message_id: string;
+            bounce_type?: components["schemas"]["BounceTypeEnum"];
+            /** Format: date-time */
+            occurred_at?: string;
+        };
+        /**
+         * @description * `BOUNCE` - BOUNCE
+         *     * `COMPLAINT` - COMPLAINT
+         *     * `UNSUBSCRIBE` - UNSUBSCRIBE
+         *     * `REPLY` - REPLY
+         *     * `DELIVERED` - DELIVERED
+         * @enum {string}
+         */
+        EmailEventTypeEnum: "BOUNCE" | "COMPLAINT" | "UNSUBSCRIBE" | "REPLY" | "DELIVERED";
+        EmailEventsRequest: {
+            events: components["schemas"]["EmailEventRequest"][];
+        };
+        EraseRequest: {
+            /** Format: email */
+            email: string;
+            /** @description Must be true. Erasure cannot be undone. */
+            confirm: boolean;
+        };
+        EraseResult: {
+            leads_anonymized: number;
+            messages_redacted: number;
+            businesses_updated: number;
+            suppressed: boolean;
         };
         Evidence: {
             /** Format: uuid */
@@ -1928,6 +2079,19 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Workspace"][];
         };
+        PasswordChangeRequest: {
+            current_password: string;
+            new_password: string;
+        };
+        PasswordResetConfirmRequest: {
+            uid: string;
+            token: string;
+            new_password: string;
+        };
+        PasswordResetRequestRequest: {
+            /** Format: email */
+            email: string;
+        };
         PatchedCampaignRequest: {
             name?: string;
             offer?: unknown;
@@ -1995,6 +2159,7 @@ export interface components {
             sender_postal_address?: string;
             consent_required_countries?: unknown;
             daily_send_limit?: number;
+            data_retention_days?: number;
         };
         ProblemItemRequest: {
             code: string;
@@ -2269,6 +2434,10 @@ export interface components {
          * @enum {string}
          */
         SourceTypeEnum: "SAAS_RESEARCH" | "LOCAL_LEADS" | "MANUAL";
+        SubjectRequest: {
+            /** Format: email */
+            email: string;
+        };
         SubmitForApprovalRequest: {
             /** @default  */
             summary: string;
@@ -2339,20 +2508,9 @@ export interface components {
          * @enum {string}
          */
         TaskTypeEnum: "SAAS_OPPORTUNITY_RESEARCH" | "SAAS_CUSTOMER_RESEARCH" | "LOCAL_LEAD_DISCOVERY";
-        TokenObtainPair: {
-            readonly access: string;
-            readonly refresh: string;
-        };
         TokenObtainPairRequest: {
             email: string;
             password: string;
-        };
-        TokenRefresh: {
-            readonly access: string;
-            refresh: string;
-        };
-        TokenRefreshRequest: {
-            refresh: string;
         };
         UnsubscribeInfo: {
             email_masked: string;
@@ -2383,6 +2541,7 @@ export interface components {
             sender_postal_address?: string;
             consent_required_countries?: unknown;
             daily_send_limit?: number;
+            data_retention_days?: number;
             readonly sender_identity_complete: boolean;
         };
         WorkspaceRequest: {
@@ -2394,6 +2553,7 @@ export interface components {
             sender_postal_address?: string;
             consent_required_countries?: unknown;
             daily_send_limit?: number;
+            data_retention_days?: number;
         };
     };
     responses: never;
@@ -2744,6 +2904,24 @@ export interface operations {
             };
         };
     };
+    v1_auth_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     v1_auth_me_retrieve: {
         parameters: {
             query?: never;
@@ -2760,6 +2938,78 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["User"];
                 };
+            };
+        };
+    };
+    v1_auth_password_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetRequestRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_auth_password_reset_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirmRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetConfirmRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_auth_password_change_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordChangeRequest"];
+                "multipart/form-data": components["schemas"]["PasswordChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2808,7 +3058,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenObtainPair"];
+                    "application/json": components["schemas"]["AccessToken"];
                 };
             };
         };
@@ -2820,20 +3070,14 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TokenRefreshRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["TokenRefreshRequest"];
-                "multipart/form-data": components["schemas"]["TokenRefreshRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenRefresh"];
+                    "application/json": components["schemas"]["AccessToken"];
                 };
             };
         };
@@ -3727,6 +3971,55 @@ export interface operations {
             };
         };
     };
+    v1_privacy_erase_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EraseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EraseRequest"];
+                "multipart/form-data": components["schemas"]["EraseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EraseResult"];
+                };
+            };
+        };
+    };
+    v1_privacy_export_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubjectRequest"];
+                "multipart/form-data": components["schemas"]["SubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description All personal data held about the email in this workspace (leads, messages, businesses, suppression entries). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     v1_project_briefs_list: {
         parameters: {
             query?: {
@@ -4244,6 +4537,30 @@ export interface operations {
         responses: {
             /** @description No response body */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_webhooks_email_events_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailEventsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EmailEventsRequest"];
+                "multipart/form-data": components["schemas"]["EmailEventsRequest"];
+            };
+        };
+        responses: {
+            /** @description {"processed", "suppressed", "replies", "unmatched", "ignored"} */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
