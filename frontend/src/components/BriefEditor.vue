@@ -74,11 +74,11 @@ const submit = () => run(async () => {
       <div class="label">Detected problems (from agent)</div>
       <ul class="space-y-1"><li v-for="p in (brief.problems as any[])" :key="p.code"><StatusBadge :status="p.severity" /> <span class="font-mono text-xs">{{ p.code }}</span> {{ p.title }}</li></ul>
     </div>
-    <div v-if="editable" class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+    <div v-if="editable" class="flex flex-wrap items-center gap-3 border-t border-line pt-4">
       <button class="btn-secondary" :disabled="busy || !dirty">Save draft</button>
       <input v-model="note" class="input max-w-xs" placeholder="Note for the reviewer (optional)" />
       <button type="button" class="btn-primary" :disabled="busy" @click="submit">Save &amp; submit for approval</button>
     </div>
-    <p v-else-if="canWrite" class="text-xs text-slate-500">Locked — only DRAFT or CHANGES_REQUESTED briefs can be edited.</p>
+    <p v-else-if="canWrite" class="text-xs text-silver">Locked — only DRAFT or CHANGES_REQUESTED briefs can be edited.</p>
   </form>
 </template>

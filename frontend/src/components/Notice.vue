@@ -3,5 +3,5 @@ defineProps<{ notice?: string | null }>()
 </script>
 
 <template>
-  <span v-if="notice" class="text-sm text-emerald-700">{{ notice }}</span>
+  <Transition name="pop"><span v-if="notice" class="text-sm text-ok" role="status">{{ notice }}</span></Transition>
 </template>

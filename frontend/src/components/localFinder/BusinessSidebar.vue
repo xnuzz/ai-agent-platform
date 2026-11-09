@@ -40,15 +40,15 @@ function onKey(e: KeyboardEvent) {
 </script>
 
 <template>
-  <aside class="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200/80 bg-white shadow-sm" aria-label="Discovered businesses">
-    <div class="space-y-3 border-b border-slate-100 p-4">
+  <aside class="flex h-full min-h-0 flex-col card p-0" aria-label="Discovered businesses">
+    <div class="space-y-3 border-b border-line p-4">
       <div class="flex items-center justify-between gap-2">
-        <h2 class="text-sm font-semibold text-slate-900">Discovered businesses</h2>
-        <span class="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700 tabular-nums" data-testid="visible-count">{{ store.visibleRows.length }}</span>
+        <h2 class="text-sm font-semibold text-ink">Discovered businesses</h2>
+        <span class="rounded-full bg-white/[0.05] px-2 py-0.5 text-xs font-semibold text-ink tabular-nums" data-testid="visible-count">{{ store.visibleRows.length }}</span>
       </div>
       <label class="relative block">
         <span class="sr-only">Search businesses</span>
-        <svg viewBox="0 0 20 20" class="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="9" r="6" /><path d="m14 14 4 4" /></svg>
+        <svg viewBox="0 0 20 20" class="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="9" r="6" /><path d="m14 14 4 4" /></svg>
         <input v-model="store.search" type="search" class="input py-1.5 pl-8 text-xs" placeholder="Search name, category, problem…" />
       </label>
       <div class="flex gap-2">
@@ -62,27 +62,26 @@ function onKey(e: KeyboardEvent) {
       </div>
       <div class="-mx-1 flex flex-wrap gap-1.5 px-1" role="radiogroup" aria-label="Filter leads">
         <button v-for="f in FILTERS" :key="f.id" type="button" role="radio" :aria-checked="store.filter === f.id"
-          class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition"
-          :class="store.filter === f.id ? 'border-violet-600 bg-violet-600 text-white' : 'border-slate-200 text-slate-600 hover:border-violet-300 hover:text-violet-700'"
+          class="chip" :class="{ 'chip-on': store.filter === f.id }"
           @click="store.filter = f.id">
           {{ f.label }} <span class="tabular-nums opacity-70">{{ store.filterCounts[f.id] }}</span>
         </button>
       </div>
     </div>
 
-    <p v-if="store.truncated" class="mx-4 mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800">Showing the newest 1,000 leads. Filter by research run to see older ones.</p>
+    <p v-if="store.truncated" class="mx-4 mt-3 rounded-lg bg-warn/10 px-3 py-2 text-[11px] text-warn">Showing the newest 1,000 leads. Filter by research run to see older ones.</p>
 
     <div ref="list" class="min-h-0 flex-1 space-y-2 overflow-y-auto p-3" role="list" @keydown="onKey">
       <template v-if="!store.loaded">
-        <div v-for="i in 5" :key="i" class="h-28 animate-pulse rounded-xl bg-slate-100" />
+        <div v-for="i in 5" :key="i" class="skeleton h-28" />
       </template>
       <div v-for="r in store.visibleRows" v-else :key="r.lead.id" role="listitem">
         <BusinessCard :row="r" :selected="r.lead.id === store.selectedId" :fresh="!!store.fresh[r.lead.id]"
           @select="store.select(r.lead.id)" @open="store.openDetail(r.lead.id)" />
       </div>
-      <div v-if="store.loaded && !store.visibleRows.length" class="px-4 py-10 text-center text-sm text-slate-500">
+      <div v-if="store.loaded && !store.visibleRows.length" class="px-4 py-10 text-center text-sm text-silver">
         <template v-if="store.scopedRows.length">No businesses match this filter.
-          <button type="button" class="mt-2 block w-full text-xs font-medium text-violet-700 hover:underline" @click="store.filter = 'all'; store.search = ''">Clear filters</button>
+          <button type="button" class="mt-2 block w-full text-xs font-medium text-ink hover:underline" @click="store.filter = 'all'; store.search = ''">Clear filters</button>
         </template>
         <template v-else-if="store.agentState === 'SCANNING' || store.agentState === 'WAITING'">Waiting for the first results…</template>
         <template v-else>No businesses yet. Start a research run to discover local leads.</template>

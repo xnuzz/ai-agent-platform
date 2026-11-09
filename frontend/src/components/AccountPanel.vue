@@ -21,7 +21,7 @@ const change = () => run(async () => {
 <template>
   <form class="card max-w-md space-y-4" @submit.prevent="change">
     <h3 class="font-semibold">Change password</h3>
-    <p class="text-sm text-slate-600">Signed in as {{ auth.user?.email }}. Changing your password signs out every session, including this one.</p>
+    <p class="text-sm text-silver">Signed in as {{ auth.user?.email }}. Changing your password signs out every session, including this one.</p>
     <ErrorBanner :message="error" />
     <div><label class="label">Current password</label><input v-model="form.current_password" type="password" required autocomplete="current-password" class="input" /></div>
     <div><label class="label">New password</label><input v-model="form.new_password" type="password" required minlength="10" autocomplete="new-password" class="input" /></div>

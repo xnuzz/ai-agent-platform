@@ -33,19 +33,19 @@ const actor = (e: AuditEvent) => e.actor_type === 'USER' ? (e.actor_email ?? 'us
       <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
       <tbody>
         <tr v-for="e in events" :key="e.id">
-          <td class="text-xs whitespace-nowrap text-slate-500">{{ fmtDate(e.created_at) }}</td>
+          <td class="text-xs whitespace-nowrap text-silver">{{ fmtDate(e.created_at) }}</td>
           <td class="text-xs">{{ actor(e) }}</td>
           <td class="font-mono text-xs">{{ e.action }}</td>
-          <td class="text-xs">{{ e.target_type }} <span class="text-slate-400">{{ e.target_id?.slice(0, 8) }}</span></td>
-          <td class="max-w-md truncate font-mono text-xs text-slate-500" :title="JSON.stringify(e.metadata)">{{ Object.keys(e.metadata ?? {}).length ? JSON.stringify(e.metadata) : '' }}</td>
+          <td class="text-xs">{{ e.target_type }} <span class="text-muted">{{ e.target_id?.slice(0, 8) }}</span></td>
+          <td class="max-w-md truncate font-mono text-xs text-silver" :title="JSON.stringify(e.metadata)">{{ Object.keys(e.metadata ?? {}).length ? JSON.stringify(e.metadata) : '' }}</td>
         </tr>
-        <tr v-if="!events.length"><td colspan="5" class="py-8 text-center text-slate-500">No events.</td></tr>
+        <tr v-if="!events.length"><td colspan="5" class="py-8 text-center text-silver">No events.</td></tr>
       </tbody>
     </table>
   </div>
   <div class="mt-3 flex items-center gap-3 text-sm">
     <button class="btn-secondary" :disabled="page <= 1" @click="page--">Previous</button>
-    <span class="text-slate-500">Page {{ page }} of {{ Math.max(1, Math.ceil(count / 50)) }}</span>
+    <span class="text-silver">Page {{ page }} of {{ Math.max(1, Math.ceil(count / 50)) }}</span>
     <button class="btn-secondary" :disabled="page * 50 >= count" @click="page++">Next</button>
   </div>
 </template>

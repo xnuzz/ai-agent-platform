@@ -95,8 +95,8 @@ function setup() {
   // Invisible layer: keeps the clustered source loaded so querySourceFeatures() returns its features.
   map.addLayer({ id: 'businesses-index', type: 'circle', source: 'businesses', paint: { 'circle-radius': 0, 'circle-opacity': 0 } })
   map.addSource('area', { type: 'geojson', data: emptyFc() })
-  map.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': '#8b5cf6', 'fill-opacity': 0.08 } })
-  map.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': '#a78bfa', 'line-width': 1.5, 'line-dasharray': [2, 2] } })
+  map.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.04 } })
+  map.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': '#d4d4d8', 'line-width': 1.2, 'line-dasharray': [2, 2] } })
   ready = true
   drawArea()
   frame(true)
@@ -353,37 +353,37 @@ watch(() => Object.keys(store.fresh), (ids, old) => {
       role="region" aria-label="Map of discovered businesses" />
 
     <!-- area breadcrumb -->
-    <div v-if="crumbs.length" class="pointer-events-none absolute top-3 left-3 flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#141726]/85 px-3 py-1.5 text-xs text-slate-300 shadow-lg backdrop-blur">
-      <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 text-violet-300" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18s6-5.2 6-10A6 6 0 0 0 4 8c0 4.8 6 10 6 10Zm0-8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd" /></svg>
-      <template v-for="(c, i) in crumbs" :key="i"><span v-if="i" class="text-slate-500">›</span><span :class="i === crumbs.length - 1 ? 'font-medium text-white' : ''">{{ c }}</span></template>
-      <span v-if="store.agentState === 'SCANNING'" class="ml-2 flex items-center gap-1.5 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-violet-200">
+    <div v-if="crumbs.length" class="glass-pop pointer-events-none absolute top-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-silver">
+      <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 text-silver" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18s6-5.2 6-10A6 6 0 0 0 4 8c0 4.8 6 10 6 10Zm0-8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd" /></svg>
+      <template v-for="(c, i) in crumbs" :key="i"><span v-if="i" class="text-silver">›</span><span :class="i === crumbs.length - 1 ? 'font-medium text-white' : ''">{{ c }}</span></template>
+      <span v-if="store.agentState === 'SCANNING'" class="ml-2 flex items-center gap-1.5 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-silver">
         <span class="lbf-live-dot" />LIVE SCANNING
       </span>
     </div>
 
-    <div v-if="store.picking" class="absolute top-3 left-1/2 -translate-x-1/2 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-medium text-white shadow-lg" role="status">
+    <div v-if="store.picking" class="absolute top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-3.5 py-1.5 text-xs font-medium text-black shadow-[0_0_24px_-4px_rgb(255_255_255/0.6)]" role="status">
       Click the map to set the search centre · Esc to cancel
     </div>
 
     <!-- legend -->
-    <div class="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] rounded-xl border border-white/10 bg-[#141726]/85 px-3 py-2 text-[11px] text-slate-300 shadow-lg backdrop-blur sm:max-w-[calc(100%-21rem)]" aria-label="Marker legend">
+    <div class="glass-pop absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] rounded-[var(--radius)] px-3 py-2 text-[11px] text-silver sm:max-w-[calc(100%-21rem)]" aria-label="Marker legend">
       <ul class="flex flex-wrap gap-x-3 gap-y-1">
         <li v-for="t in TONES" :key="t.tone" class="flex items-center gap-1.5">
-          <span class="lbf-swatch" :data-tone="t.tone" />{{ t.label }}<span class="text-slate-500 tabular-nums">{{ toneCounts[t.tone] ?? 0 }}</span>
+          <span class="lbf-swatch" :data-tone="t.tone" />{{ t.label }}<span class="text-silver tabular-nums">{{ toneCounts[t.tone] ?? 0 }}</span>
         </li>
       </ul>
-      <p v-if="unmapped > 0" class="mt-1 text-slate-400" data-testid="unmapped-note">{{ unmapped }} without coordinates — list only</p>
-      <p v-if="tilesDown" class="mt-1 text-amber-300" role="status">Basemap tiles unavailable — markers are still at their real coordinates.</p>
+      <p v-if="unmapped > 0" class="mt-1 text-muted" data-testid="unmapped-note">{{ unmapped }} without coordinates — list only</p>
+      <p v-if="tilesDown" class="mt-1 text-warn" role="status">Basemap tiles unavailable — markers are still at their real coordinates.</p>
     </div>
 
-    <div v-if="!store.loaded && !failed" class="absolute inset-0 grid place-items-center text-sm text-slate-400">
-      <span class="flex items-center gap-2"><span class="h-4 w-4 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />Loading businesses…</span>
+    <div v-if="!store.loaded && !failed" class="absolute inset-0 grid place-items-center text-sm text-muted">
+      <span class="flex items-center gap-2"><span class="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-transparent" />Loading businesses…</span>
     </div>
-    <div v-else-if="failed" class="absolute inset-0 grid place-items-center p-6 text-center text-sm text-slate-300">{{ failed }}</div>
+    <div v-else-if="failed" class="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted">{{ failed }}</div>
     <div v-else-if="!store.scopedRows.length && store.agentState !== 'SCANNING' && !store.configOpen" class="pointer-events-none absolute inset-0 grid place-items-center p-6">
-      <div class="pointer-events-auto max-w-sm rounded-2xl border border-white/10 bg-[#141726]/90 p-5 text-center shadow-xl backdrop-blur">
+      <div class="glass-pop pointer-events-auto max-w-sm rounded-[var(--radius-lg)] p-6 text-center">
         <div class="text-sm font-semibold text-white">No businesses discovered yet</div>
-        <p class="mt-1 text-xs text-slate-400">Choose a city and categories, then start Agent 2. Discoveries appear here live.</p>
+        <p class="mt-1 text-xs text-muted">Choose a city and categories, then start Agent 2. Discoveries appear here live.</p>
         <button type="button" class="btn-accent mt-3" @click="store.configOpen = true">Configure research</button>
       </div>
     </div>
@@ -392,60 +392,72 @@ watch(() => Object.keys(store.fresh), (ids, old) => {
 </template>
 
 <style>
-/* Global: markers/popups live outside this component's DOM (MapLibre containers). */
-:root { --lbf-new: #8b5cf6; --lbf-hot: #c084fc; --lbf-reviewed: #94a3b8; --lbf-approved: #34d399; --lbf-rejected: #f87171; }
+/* Global: markers/popups live outside this component's DOM (MapLibre containers). Monochrome; colour only for approved/rejected. */
+:root { --lbf-new: #d4d4d8; --lbf-hot: #ffffff; --lbf-reviewed: #71717a; --lbf-approved: var(--ok); --lbf-rejected: var(--bad); }
 .lbf-picking .maplibregl-canvas-container { cursor: crosshair; }
 .lbf-marker { display: flex; align-items: center; }
 .lbf-pin {
   --c: var(--lbf-new);
-  width: 16px; height: 16px; border-radius: 9999px; background: var(--c); border: 2px solid #0d0f17;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent), 0 2px 6px rgb(0 0 0 / .5);
-  cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background-color .3s ease, opacity .3s ease;
-  animation: lbf-in .25s ease-out both;
+  width: 14px; height: 14px; border-radius: 9999px; background: var(--c); border: 2px solid #050505;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent), 0 0 10px color-mix(in srgb, var(--c) 35%, transparent);
+  cursor: pointer; transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), background-color .3s ease, opacity .3s ease;
+  animation: lbf-in .35s var(--ease) both;
 }
-.lbf-pin:hover, .lbf-pin:focus-visible { transform: scale(1.3); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent), 0 2px 8px rgb(0 0 0 / .6); }
-.lbf-pin[data-tone='hot'] { --c: var(--lbf-hot); width: 18px; height: 18px; box-shadow: 0 0 0 3px rgb(192 132 252 / .28), 0 0 18px 4px rgb(168 85 247 / .55); }
+.lbf-pin:hover, .lbf-pin:focus-visible { transform: scale(1.3); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 35%, transparent), 0 0 16px color-mix(in srgb, var(--c) 55%, transparent); }
+.lbf-pin[data-tone='hot'] { --c: var(--lbf-hot); width: 16px; height: 16px; box-shadow: 0 0 0 3px rgb(255 255 255 / .2), 0 0 18px 5px rgb(255 255 255 / .55); }
 .lbf-pin[data-tone='reviewed'] { --c: var(--lbf-reviewed); }
 .lbf-pin[data-tone='approved'] { --c: var(--lbf-approved); }
 .lbf-pin[data-tone='rejected'] { --c: var(--lbf-rejected); }
-.lbf-pin[data-tone='new'][data-potential='low'] { width: 13px; height: 13px; opacity: .8; }
-.lbf-pin.is-selected { transform: scale(1.45); z-index: 2; box-shadow: 0 0 0 3px #0d0f17, 0 0 0 5px #ddd6fe, 0 0 22px 6px rgb(139 92 246 / .6); }
-.lbf-pin.is-fresh { animation: lbf-drop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+.lbf-pin[data-tone='new'][data-potential='low'] { width: 11px; height: 11px; opacity: .75; }
+.lbf-pin.is-selected { transform: scale(1.5); z-index: 2; box-shadow: 0 0 0 3px #050505, 0 0 0 4.5px #fff, 0 0 26px 6px rgb(255 255 255 / .55); }
+.lbf-pin.is-fresh { animation: lbf-drop .7s var(--ease) both; }
 .lbf-name {
-  display: none; margin-left: 6px; padding: 1px 6px; border-radius: 6px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font: 500 11px/1.4 ui-sans-serif, system-ui, sans-serif; color: #e2e4f0; background: rgb(20 23 38 / .8); pointer-events: none;
+  display: none; margin-left: 7px; padding: 1px 7px; border-radius: 9999px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 500 11px/1.5 var(--font-sans); color: #f4f4f5; background: rgb(10 10 12 / .75); border: 1px solid rgb(255 255 255 / .08); pointer-events: none;
 }
 .lbf-labels .lbf-name { display: block; }
 .lbf-cluster-pin {
   width: var(--size, 34px); height: var(--size, 34px); border-radius: 9999px; display: grid; place-items: center; cursor: pointer;
-  font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; color: #fff; background: rgb(124 58 237 / .85);
-  box-shadow: 0 0 0 5px rgb(139 92 246 / .22), 0 0 0 10px rgb(139 92 246 / .08), 0 4px 14px rgb(0 0 0 / .5);
-  transition: transform .18s ease; animation: lbf-in .25s ease-out both;
+  font: 600 12px/1 var(--font-sans); color: #fff; background: rgb(255 255 255 / .1); border: 1px solid rgb(255 255 255 / .35);
+  box-shadow: 0 0 0 6px rgb(255 255 255 / .04), 0 0 24px -2px rgb(255 255 255 / .3); backdrop-filter: blur(6px);
+  transition: transform var(--dur-2) var(--ease), background-color var(--dur-2); animation: lbf-in .35s var(--ease) both;
 }
-.lbf-cluster-pin:hover, .lbf-cluster-pin:focus-visible { transform: scale(1.08); outline: none; background: rgb(139 92 246); }
-.lbf-ripple { width: 18px; height: 18px; border-radius: 9999px; pointer-events: none; }
+.lbf-cluster-pin:hover, .lbf-cluster-pin:focus-visible { transform: scale(1.08); outline: none; background: rgb(255 255 255 / .2); }
+.lbf-ripple { width: 16px; height: 16px; border-radius: 9999px; pointer-events: none; }
 .lbf-ripple::before, .lbf-ripple::after {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; border: 2px solid #c4b5fd; animation: lbf-ripple 1.3s ease-out 2 both;
+  content: ''; position: absolute; inset: 0; border-radius: inherit; border: 1.5px solid rgb(255 255 255 / .8); animation: lbf-ripple 1.6s var(--ease) 2 both;
 }
-.lbf-ripple::after { animation-delay: .35s; }
-.lbf-swatch { width: 9px; height: 9px; border-radius: 9999px; background: var(--lbf-new); display: inline-block; }
-.lbf-swatch[data-tone='hot'] { background: var(--lbf-hot); box-shadow: 0 0 6px 1px rgb(168 85 247 / .8); }
+.lbf-ripple::after { animation-delay: .4s; }
+.lbf-swatch { width: 8px; height: 8px; border-radius: 9999px; background: var(--lbf-new); display: inline-block; }
+.lbf-swatch[data-tone='hot'] { background: var(--lbf-hot); box-shadow: 0 0 6px 1px rgb(255 255 255 / .8); }
 .lbf-swatch[data-tone='reviewed'] { background: var(--lbf-reviewed); }
 .lbf-swatch[data-tone='approved'] { background: var(--lbf-approved); }
 .lbf-swatch[data-tone='rejected'] { background: var(--lbf-rejected); }
-.lbf-live-dot { width: 6px; height: 6px; border-radius: 9999px; background: #c4b5fd; animation: lbf-blink 1.4s ease-in-out infinite; }
-.lbf-fit { display: grid !important; place-items: center; color: #334155; }
-.lbf-tooltip .maplibregl-popup-content { padding: 6px 9px; border-radius: 8px; background: #1b1e2e; color: #e2e4f0; box-shadow: 0 6px 20px rgb(0 0 0 / .45); border: 1px solid rgb(255 255 255 / .08); }
+.lbf-live-dot { width: 6px; height: 6px; border-radius: 9999px; background: #fff; box-shadow: 0 0 8px 1px rgb(255 255 255 / .9); animation: lbf-blink 1.4s ease-in-out infinite; }
+/* MapLibre chrome → glass */
+.lbf-map .maplibregl-ctrl-group { background: var(--glass-3); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: var(--shadow-1); overflow: hidden; backdrop-filter: blur(var(--blur-2)); }
+.lbf-map .maplibregl-ctrl-group button { width: 32px; height: 32px; }
+.lbf-map .maplibregl-ctrl-group button + button { border-top: 1px solid var(--line); }
+.lbf-map .maplibregl-ctrl-group button:hover { background: rgb(255 255 255 / .08); }
+.lbf-map .maplibregl-ctrl-group .maplibregl-ctrl-icon { filter: invert(1) brightness(1.2); }
+.lbf-fit { display: grid !important; place-items: center; color: #fff; }
+.lbf-tooltip .maplibregl-popup-content { padding: 6px 10px; border-radius: 10px; background: var(--glass-3); color: #fff; box-shadow: var(--shadow-2); border: 1px solid var(--line-strong); backdrop-filter: blur(var(--blur-2)); }
 .lbf-tooltip .maplibregl-popup-tip { display: none; }
-.lbf-tip-name { font: 600 12px/1.3 ui-sans-serif, system-ui, sans-serif; }
-.lbf-tip-meta { font: 400 11px/1.3 ui-sans-serif, system-ui, sans-serif; color: #a3a8c3; margin-top: 1px; }
-.lbf-popup .maplibregl-popup-content { padding: 14px; border-radius: 14px; box-shadow: 0 12px 32px rgb(0 0 0 / .35); }
-.lbf-popup .maplibregl-popup-close-button { top: 6px; right: 8px; font-size: 18px; color: #94a3b8; }
-.lbf-map .maplibregl-ctrl-attrib { background: rgb(20 23 38 / .75); color: #9aa0b8; }
-.lbf-map .maplibregl-ctrl-attrib a { color: #c4b5fd; }
+.lbf-tip-name { font: 600 12px/1.3 var(--font-sans); }
+.lbf-tip-meta { font: 400 11px/1.3 var(--font-sans); color: var(--silver); margin-top: 1px; }
+.lbf-popup .maplibregl-popup-content { padding: 16px; border-radius: var(--radius-lg); background: var(--glass-3); border: 1px solid var(--line-strong); box-shadow: var(--shadow-2); backdrop-filter: blur(var(--blur-3)); }
+.lbf-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: rgb(20 20 23 / .92); }
+.lbf-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: rgb(20 20 23 / .92); }
+.lbf-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: rgb(20 20 23 / .92); }
+.lbf-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: rgb(20 20 23 / .92); }
+.lbf-popup .maplibregl-popup-close-button { top: 8px; right: 10px; font-size: 18px; color: var(--silver); border-radius: 8px; }
+.lbf-popup .maplibregl-popup-close-button:hover { background: rgb(255 255 255 / .08); color: #fff; }
+.lbf-map .maplibregl-ctrl-attrib { background: rgb(10 10 12 / .7); color: var(--muted); }
+.lbf-map .maplibregl-ctrl-attrib a { color: var(--soft); }
+.lbf-map .maplibregl-ctrl-attrib-button { filter: invert(1); }
 @keyframes lbf-in { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
-@keyframes lbf-drop { 0% { opacity: 0; transform: translateY(-14px) scale(.4); } 60% { opacity: 1; transform: translateY(0) scale(1.35); } 100% { transform: scale(1); } }
-@keyframes lbf-ripple { from { transform: scale(.6); opacity: .9; } to { transform: scale(3.6); opacity: 0; } }
+@keyframes lbf-drop { 0% { opacity: 0; transform: translateY(-12px) scale(.4); } 60% { opacity: 1; transform: translateY(0) scale(1.25); } 100% { transform: scale(1); } }
+@keyframes lbf-ripple { from { transform: scale(.6); opacity: .9; } to { transform: scale(4); opacity: 0; } }
 @keyframes lbf-blink { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) {
   .lbf-pin, .lbf-cluster-pin, .lbf-pin.is-fresh, .lbf-live-dot { animation: none; transition: none; }

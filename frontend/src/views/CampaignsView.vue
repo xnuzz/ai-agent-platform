@@ -16,14 +16,14 @@ onMounted(async () => { campaigns.value = (await api.get<Paginated<Campaign>>('c
     <table class="table">
       <thead><tr><th>Name</th><th>Source</th><th>Messages</th><th>Status</th><th>Created</th></tr></thead>
       <tbody>
-        <tr v-for="c in campaigns" :key="c.id" class="hover:bg-slate-50">
-          <td><RouterLink :to="`/campaigns/${c.id}`" class="font-medium text-indigo-700">{{ c.name }}</RouterLink></td>
-          <td class="text-xs text-slate-500">{{ agentLabel(c.source) }}</td>
+        <tr v-for="c in campaigns" :key="c.id" class="hover:bg-white/[0.03]">
+          <td><RouterLink :to="`/campaigns/${c.id}`" class="font-medium text-ink">{{ c.name }}</RouterLink></td>
+          <td class="text-xs text-silver">{{ agentLabel(c.source) }}</td>
           <td class="text-xs"><span v-for="(n, s) in c.message_counts" :key="s" class="mr-2">{{ s }}: {{ n }}</span></td>
           <td><StatusBadge :status="c.status" /></td>
-          <td class="text-slate-500">{{ fmtDate(c.created_at) }}</td>
+          <td class="text-silver">{{ fmtDate(c.created_at) }}</td>
         </tr>
-        <tr v-if="!campaigns.length"><td colspan="5" class="py-8 text-center text-slate-500">No campaigns yet.</td></tr>
+        <tr v-if="!campaigns.length"><td colspan="5" class="py-8 text-center text-silver">No campaigns yet.</td></tr>
       </tbody>
     </table>
   </div>

@@ -19,10 +19,10 @@ async function confirmOptOut() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center px-4">
-    <div class="card w-full max-w-md space-y-4 text-center">
+  <div class="flex min-h-dvh items-center justify-center px-4">
+    <div class="glass-pop fade-in w-full max-w-md space-y-4 rounded-[var(--radius-lg)] p-6 text-center">
       <h1 class="text-xl font-semibold">Unsubscribe</h1>
-      <p v-if="error" class="text-sm text-rose-700">{{ error }}</p>
+      <p v-if="error" class="text-sm text-bad">{{ error }}</p>
       <template v-else-if="info">
         <p v-if="done" class="text-sm">{{ info.email_masked }} will not receive further messages from {{ info.sender || 'this sender' }}.</p>
         <template v-else>

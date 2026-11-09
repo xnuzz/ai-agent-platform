@@ -18,9 +18,9 @@ watch(() => `${props.targetId}:${String(props.refreshKey ?? "")}`, async () => {
 
 <template>
   <div v-if="latest" class="rounded-lg border p-3 text-sm"
-    :class="latest.status === 'CHANGES_REQUESTED' ? 'border-orange-200 bg-orange-50' : latest.status === 'REJECTED' ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-slate-50'">
+    :class="latest.status === 'CHANGES_REQUESTED' ? 'border-warn/30 bg-warn/10' : latest.status === 'REJECTED' ? 'border-bad/30 bg-bad/10' : 'border-line bg-white/[0.03]'">
     <div class="flex items-center gap-2"><span class="font-medium">Latest review</span><StatusBadge :status="latest.status" />
-      <span class="text-xs text-slate-500">{{ latest.decided_by_email ?? 'awaiting decision' }} · {{ fmtDate(latest.decided_at ?? latest.created_at) }}</span></div>
+      <span class="text-xs text-silver">{{ latest.decided_by_email ?? 'awaiting decision' }} · {{ fmtDate(latest.decided_at ?? latest.created_at) }}</span></div>
     <p v-if="latest.decision_comment" class="mt-1 whitespace-pre-wrap">“{{ latest.decision_comment }}”</p>
   </div>
 </template>

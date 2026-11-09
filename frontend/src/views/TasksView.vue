@@ -36,10 +36,13 @@ async function start() {
 <template>
   <PageHeader title="Agent tasks" subtitle="Start research. Agents prepare everything; approvals gate every outbound step." />
   <ErrorBanner :message="error" />
-  <form v-if="auth.canWrite()" class="card mb-6 space-y-4" @submit.prevent="start">
-    <div class="flex gap-2">
-      <button type="button" :class="kind === 'saas' ? 'btn-primary' : 'btn-secondary'" @click="kind = 'saas'">Agent 1 · SaaS opportunities</button>
-      <button type="button" :class="kind === 'local' ? 'btn-primary' : 'btn-secondary'" @click="kind = 'local'">Agent 2 · Local leads</button>
+  <form v-if="auth.canWrite()" class="card mb-6 space-y-5" @submit.prevent="start">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="segmented" role="group" aria-label="Agent">
+        <button type="button" :aria-pressed="kind === 'saas'" @click="kind = 'saas'">Agent 1 · SaaS opportunities</button>
+        <button type="button" :aria-pressed="kind === 'local'" @click="kind = 'local'">Agent 2 · Local leads</button>
+      </div>
+      <RouterLink v-if="kind === 'local'" to="/local-finder" class="link text-xs">Open the Local Business Finder map →</RouterLink>
     </div>
     <div v-if="kind === 'saas'" class="grid gap-3 md:grid-cols-4">
       <div class="md:col-span-2"><label class="label">Industry</label><input v-model="saas.industry" required class="input" placeholder="Dental clinics" /></div>
@@ -54,20 +57,20 @@ async function start() {
       <div><label class="label">Max businesses</label><input v-model.number="local.max_businesses" type="number" min="1" max="200" class="input" /></div>
       <div class="md:col-span-4"><label class="label">Categories (comma)</label><input v-model="local.categories" class="input" placeholder="Bakery, Dentist" /></div>
     </div>
-    <button class="btn-primary">Start task</button>
+    <div class="flex justify-end border-t border-line pt-4"><button class="btn-primary">Start task</button></div>
   </form>
   <div class="card overflow-x-auto p-0">
     <table class="table">
       <thead><tr><th>Task</th><th>Agent</th><th>Status</th><th class="w-48">Progress</th><th>Created</th></tr></thead>
       <tbody>
-        <tr v-for="t in tasks" :key="t.id" class="hover:bg-slate-50">
-          <td><RouterLink :to="`/tasks/${t.id}`" class="font-medium text-indigo-700">{{ taskLabel(t.task_type) }}</RouterLink></td>
-          <td class="text-slate-500">{{ agentLabel(t.agent) }}</td>
+        <tr v-for="t in tasks" :key="t.id" class="hover:bg-white/[0.03]">
+          <td><RouterLink :to="`/tasks/${t.id}`" class="font-medium text-ink hover:underline underline-offset-4">{{ taskLabel(t.task_type) }}</RouterLink></td>
+          <td class="text-silver">{{ agentLabel(t.agent) }}</td>
           <td><StatusBadge :status="t.status" /></td>
-          <td><ProgressBar :value="t.progress ?? 0" /><div class="mt-1 text-xs text-slate-500">{{ t.stage }}</div></td>
-          <td class="text-slate-500">{{ fmtDate(t.created_at) }}</td>
+          <td><ProgressBar :value="t.progress ?? 0" /><div class="mt-1.5 text-xs text-muted">{{ t.stage.replace(/_/g, ' ').toLowerCase() }}</div></td>
+          <td class="text-silver">{{ fmtDate(t.created_at) }}</td>
         </tr>
-        <tr v-if="!tasks.length"><td colspan="5" class="py-8 text-center text-slate-500">No tasks yet.</td></tr>
+        <tr v-if="!tasks.length"><td colspan="5" class="py-8 text-center text-silver">No tasks yet.</td></tr>
       </tbody>
     </table>
   </div>

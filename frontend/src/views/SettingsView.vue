@@ -38,8 +38,10 @@ async function save() {
 
 <template>
   <PageHeader title="Settings" subtitle="Sender identity is required before any campaign can launch." />
-  <div class="mb-4 flex gap-2">
-    <button v-for="t in (['workspace', 'members', 'integrations', 'privacy', 'account'] as const)" :key="t" :class="tab === t ? 'btn-primary' : 'btn-secondary'" class="capitalize" @click="tab = t">{{ t }}</button>
+  <div class="mb-5 max-w-full overflow-x-auto">
+    <div class="segmented" role="group" aria-label="Settings section">
+      <button v-for="t in (['workspace', 'members', 'integrations', 'privacy', 'account'] as const)" :key="t" type="button" class="capitalize" :aria-pressed="tab === t" @click="tab = t">{{ t }}</button>
+    </div>
   </div>
   <MembersPanel v-if="tab === 'members'" />
   <IntegrationsPanel v-else-if="tab === 'integrations'" />
@@ -57,13 +59,13 @@ async function save() {
       <div><label class="label">Countries requiring consent (ISO, comma)</label><input v-model="form.consent_required_countries" class="input" placeholder="DE, AT" /></div>
       <div><label class="label">Daily send limit</label><input v-model.number="form.daily_send_limit" type="number" min="0" class="input" /></div>
       <div><label class="label">Data retention (days, 0 = off)</label><input v-model.number="form.data_retention_days" type="number" min="0" class="input" />
-        <p class="mt-1 text-xs text-slate-500">Contact data on idle leads that were never contacted is anonymized after this period.</p></div>
+        <p class="mt-1 text-xs text-silver">Contact data on idle leads that were never contacted is anonymized after this period.</p></div>
     </fieldset>
     <div class="flex items-center gap-3">
       <button v-if="auth.isAdmin()" class="btn-primary">Save</button>
-      <span v-else class="text-sm text-slate-500">Only admins can change settings.</span>
-      <span v-if="saved" class="text-sm text-emerald-700">Saved.</span>
-      <span class="text-xs" :class="auth.current?.sender_identity_complete ? 'text-emerald-700' : 'text-amber-700'">
+      <span v-else class="text-sm text-silver">Only admins can change settings.</span>
+      <span v-if="saved" class="text-sm text-ok">Saved.</span>
+      <span class="text-xs" :class="auth.current?.sender_identity_complete ? 'text-ok' : 'text-warn'">
         Sender identity {{ auth.current?.sender_identity_complete ? 'complete' : 'incomplete' }}
       </span>
     </div>

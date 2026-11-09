@@ -4,6 +4,22 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-09 — Frontend redesign session — monochrome "deep space" glass UI
+
+**Implemented (visual/UX only; no API, store or business-logic changes)**
+- Design system in `frontend/src/style.css`: CSS-variable tokens (surfaces, glass depths, lines, text, status, viz ramp, shadows, blur, radii, motion) mapped into Tailwind `@theme`; component classes `.card`/`.glass-nav`/`.glass-pop`, `.btn-primary|secondary|danger|ghost` (white primary), `.input`, `.label`, `.table`, `.chip`, `.segmented`, `.kicker`, `.link`, `.skeleton`; global focus ring, dark native dropdowns, page/overlay transitions, global reduced-motion rule. Inter self-hosted.
+- `StarField.vue` (canvases painted once + CSS twinkle; drift only on auth pages), `AppIcon.vue` (inline icon set), `BrandMark.vue`, `StatTile.vue`, `charts/DonutChart.vue`, `charts/BarList.vue`, `charts/OpportunityMap.vue`, `charts/palette.ts`.
+- Layout: floating glass sidebar with icons, illuminated active item, workspace switcher, collapsible rail (persisted), mobile drawer + top bar; routes fade/scale between pages.
+- Pages: dashboard rebuilt (5 KPI tiles, agent activity, research-task donut, pipeline segmented bars, leads by source); tasks (segmented agent picker); approvals (segmented status, type lanes with counts, illuminated selection, sticky detail); software ideas (interactive opportunity map: pain × score, size = evidence, brightness = curation; select → scroll to card); login/reset/unsubscribe (glass, brand); settings (segmented tabs); every other page via the token mapping. Status badges reduced to neutral pills, colour only for ok/warn/error, white pulse for running.
+- Local Business Finder: monochrome map style, white/silver markers (green/red only for approved/rejected), glass clusters/popups/tooltips/MapLibre controls, white charts, illuminated selected card, glass drawers and toasts.
+
+**Files:** `frontend/src/style.css`, `App.vue`, `layouts/AppLayout.vue`, `index.html`, `main.ts`, all `views/*`, shared `components/*`, `components/localFinder/**`, `features/localFinder/mapStyle.ts`; new components listed above. **New dependency:** `@fontsource-variable/inter@5.3.0` (OFL, fonts only).
+**Tests:** `npm run build` passes; Playwright 14/14 unchanged (selectors kept stable); screenshots at 1440, 1920, tablet, phone (no horizontal overflow, no JS errors); collapsed rail and mobile drawer checked. `pytest` unaffected (no backend change).
+**Not verified:** basemap tiles (host blocked here); GPU cost of backdrop blur on low-end devices.
+**Next:** check the map with real tiles; consider a "reduce transparency" setting that swaps glass for solid surfaces.
+
+---
+
 ## 2026-11-09 — Agent 2 dashboard UI session — Local Business Finder (`/local-finder`)
 
 **Implemented (frontend only, existing endpoints only)**

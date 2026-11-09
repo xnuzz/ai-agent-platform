@@ -47,10 +47,10 @@ function briefChanged(b: ProjectBrief) { briefs.value = briefs.value.map((x) => 
     </PageHeader>
     <ErrorBanner :message="error" />
     <div class="mb-4 flex flex-wrap items-center gap-2 text-sm">
-      <StatusBadge :status="lead.status" /><span class="text-slate-500">Score {{ lead.score ?? '—' }}</span>
-      <span v-if="lead.is_suppressed" class="rounded bg-rose-100 px-2 py-0.5 text-xs text-rose-800">On suppression list</span>
+      <StatusBadge :status="lead.status" /><span class="text-silver">Score {{ lead.score ?? '—' }}</span>
+      <span v-if="lead.is_suppressed" class="rounded bg-bad/10 px-2 py-0.5 text-xs text-bad">On suppression list</span>
       <template v-if="auth.canWrite()">
-        <span class="ml-2 text-xs text-slate-500">Move to:</span>
+        <span class="ml-2 text-xs text-silver">Move to:</span>
         <button v-for="s in NEXT[lead.status ?? ''] ?? []" :key="s" class="btn-secondary" :disabled="busy" @click="setStatus(s)">{{ s.replace('_', ' ') }}</button>
       </template>
     </div>
@@ -71,28 +71,28 @@ function briefChanged(b: ProjectBrief) { briefs.value = briefs.value.map((x) => 
             <div class="md:col-span-2"><label class="label">Legal basis note (LIA summary / consent record)</label><textarea v-model="form.legal_basis_note" rows="2" class="input" /></div>
             <div class="md:col-span-2"><label class="label">Qualification notes</label><textarea v-model="form.qualification_notes" rows="3" class="input" /></div>
           </fieldset>
-          <p v-if="form.legal_basis === 'UNKNOWN'" class="text-xs text-amber-700">Messages to this lead will be blocked at send time until a legal basis is recorded.</p>
-          <p class="text-xs text-slate-500">Changing the email here does not alter already-drafted messages (they keep the address that was reviewed).</p>
+          <p v-if="form.legal_basis === 'UNKNOWN'" class="text-xs text-warn">Messages to this lead will be blocked at send time until a legal basis is recorded.</p>
+          <p class="text-xs text-silver">Changing the email here does not alter already-drafted messages (they keep the address that was reviewed).</p>
           <div v-if="auth.canWrite()" class="flex items-center gap-3"><button class="btn-primary" :disabled="busy || !dirty">Save</button><Notice :notice="notice" /></div>
         </form>
       </div>
       <aside class="space-y-4">
         <section class="card text-sm">
           <h3 class="mb-2 font-medium">Business</h3>
-          <a v-if="lead.business.website" :href="lead.business.website" target="_blank" rel="noopener noreferrer" class="text-indigo-600">{{ lead.business.website }}</a>
-          <div class="text-slate-600">{{ lead.business.address_line1 }}</div>
-          <div class="text-slate-600">{{ lead.business.email }} {{ lead.business.phone }}</div>
-          <div class="text-xs text-slate-500">{{ lead.business.category }}</div>
+          <a v-if="lead.business.website" :href="lead.business.website" target="_blank" rel="noopener noreferrer" class="text-ink">{{ lead.business.website }}</a>
+          <div class="text-silver">{{ lead.business.address_line1 }}</div>
+          <div class="text-silver">{{ lead.business.email }} {{ lead.business.phone }}</div>
+          <div class="text-xs text-silver">{{ lead.business.category }}</div>
         </section>
         <section class="card text-sm">
           <h3 class="mb-2 font-medium">Problems</h3>
           <ul class="space-y-1"><li v-for="p in (lead.problems as any[])" :key="p.code"><StatusBadge :status="p.severity" /> {{ p.title }}</li></ul>
-          <p v-if="!(lead.problems as any[]).length" class="text-slate-500">None recorded.</p>
+          <p v-if="!(lead.problems as any[]).length" class="text-silver">None recorded.</p>
         </section>
         <section class="card text-sm">
           <h3 class="mb-2 font-medium">Campaigns</h3>
-          <RouterLink v-for="c in campaigns" :key="c.id" :to="`/campaigns/${c.id}`" class="flex justify-between py-1 text-indigo-700">{{ c.name }} <StatusBadge :status="c.status" /></RouterLink>
-          <p v-if="!campaigns.length" class="text-slate-500">None.</p>
+          <RouterLink v-for="c in campaigns" :key="c.id" :to="`/campaigns/${c.id}`" class="flex justify-between py-1 text-ink">{{ c.name }} <StatusBadge :status="c.status" /></RouterLink>
+          <p v-if="!campaigns.length" class="text-silver">None.</p>
         </section>
       </aside>
     </div>

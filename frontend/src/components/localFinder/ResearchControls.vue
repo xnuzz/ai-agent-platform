@@ -88,20 +88,20 @@ async function start() {
 <template>
   <Transition name="lbf-drawer">
     <aside v-if="store.configOpen" v-show="!store.picking" ref="panel" role="dialog" aria-modal="false" aria-labelledby="cfg-h"
-      class="fixed inset-0 z-40 flex flex-col bg-white shadow-2xl md:inset-y-3 md:right-3 md:left-auto md:w-[420px] md:rounded-2xl md:border md:border-slate-200">
-      <header class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      class="glass-pop fixed inset-0 z-40 flex flex-col md:inset-y-3 md:right-3 md:left-auto md:w-[420px] md:rounded-[var(--radius-lg)]">
+      <header class="flex items-center justify-between border-b border-line px-5 py-4">
         <div>
-          <h2 id="cfg-h" class="text-base font-semibold text-slate-900">New research</h2>
-          <p class="text-xs text-slate-500">Agent 2 discovers businesses, scans their websites and drafts proposals for your approval.</p>
+          <h2 id="cfg-h" class="text-base font-semibold text-ink">New research</h2>
+          <p class="text-xs text-silver">Agent 2 discovers businesses, scans their websites and drafts proposals for your approval.</p>
         </div>
-        <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close" @click="store.configOpen = false">
+        <button type="button" class="rounded-lg p-1.5 text-muted hover:bg-white/[0.06] hover:text-soft" aria-label="Close" @click="store.configOpen = false">
           <svg viewBox="0 0 20 20" class="h-4 w-4" fill="currentColor" aria-hidden="true"><path d="M5.3 5.3a1 1 0 0 1 1.4 0L10 8.6l3.3-3.3a1 1 0 1 1 1.4 1.4L11.4 10l3.3 3.3a1 1 0 0 1-1.4 1.4L10 11.4l-3.3 3.3a1 1 0 0 1-1.4-1.4L8.6 10 5.3 6.7a1 1 0 0 1 0-1.4Z" /></svg>
         </button>
       </header>
 
       <form id="cfg-form" class="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4" @submit.prevent="start">
         <fieldset class="space-y-3">
-          <legend class="mb-2 text-xs font-semibold text-slate-900">Area</legend>
+          <legend class="mb-2 text-xs font-semibold text-ink">Area</legend>
           <div class="grid grid-cols-2 gap-3">
             <div><label class="label" for="cfg-country">Country</label>
               <select id="cfg-country" v-model="form.country" class="input" required>
@@ -111,11 +111,11 @@ async function start() {
             <div><label class="label" for="cfg-region">Region</label><input id="cfg-region" v-model="form.region" class="input" maxlength="120" placeholder="Optional" /></div>
             <div><label class="label" for="cfg-hood">Neighbourhood</label><input id="cfg-hood" v-model="form.neighborhood" class="input" maxlength="120" placeholder="e.g. Lozenets" /></div>
           </div>
-          <div class="rounded-xl border border-slate-200 p-3">
+          <div class="rounded-xl border border-line p-3">
             <div class="flex items-center justify-between gap-2">
               <div class="text-xs">
-                <div class="font-medium text-slate-800">Search centre</div>
-                <div class="text-slate-500" data-testid="draft-center">{{ store.draftCenter ? `${store.draftCenter[1].toFixed(5)}, ${store.draftCenter[0].toFixed(5)}` : 'City centre (resolved by the agent)' }}</div>
+                <div class="font-medium text-ink">Search centre</div>
+                <div class="text-silver" data-testid="draft-center">{{ store.draftCenter ? `${store.draftCenter[1].toFixed(5)}, ${store.draftCenter[0].toFixed(5)}` : 'City centre (resolved by the agent)' }}</div>
               </div>
               <div class="flex gap-1.5">
                 <button v-if="store.draftCenter" type="button" class="btn-secondary px-2 py-1 text-xs" @click="store.draftCenter = null">Clear</button>
@@ -123,42 +123,42 @@ async function start() {
               </div>
             </div>
             <label class="label mt-3" for="cfg-radius">Radius · {{ store.draftRadiusKm }} km</label>
-            <input id="cfg-radius" v-model.number="store.draftRadiusKm" type="range" min="1" max="100" class="w-full accent-violet-600" />
-            <p class="text-[11px] text-slate-400">The neighbourhood is passed to the agent as a note; pick a centre on the map to focus discovery there.</p>
+            <input id="cfg-radius" v-model.number="store.draftRadiusKm" type="range" min="1" max="100" class="w-full accent-white" />
+            <p class="text-[11px] text-muted">The neighbourhood is passed to the agent as a note; pick a centre on the map to focus discovery there.</p>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend class="mb-2 text-xs font-semibold text-slate-900">Business categories <span class="font-normal text-slate-400">· empty = any</span></legend>
+          <legend class="mb-2 text-xs font-semibold text-ink">Business categories <span class="font-normal text-muted">· empty = any</span></legend>
           <div class="flex flex-wrap gap-1.5">
-            <span v-for="c in form.categories" :key="c" class="inline-flex items-center gap-1 rounded-full bg-violet-600 py-0.5 pr-1 pl-2.5 text-xs text-white">
-              {{ c }}<button type="button" class="rounded-full p-0.5 hover:bg-white/20" :aria-label="`Remove ${c}`" @click="removeCategory(c)">
+            <span v-for="c in form.categories" :key="c" class="inline-flex items-center gap-1 rounded-full bg-white py-0.5 pr-1 pl-2.5 text-xs font-medium text-black">
+              {{ c }}<button type="button" class="rounded-full p-0.5 hover:bg-black/10" :aria-label="`Remove ${c}`" @click="removeCategory(c)">
                 <svg viewBox="0 0 20 20" class="h-3 w-3" fill="currentColor" aria-hidden="true"><path d="M5.3 5.3a1 1 0 0 1 1.4 0L10 8.6l3.3-3.3a1 1 0 1 1 1.4 1.4L11.4 10l3.3 3.3a1 1 0 0 1-1.4 1.4L10 11.4l-3.3 3.3a1 1 0 0 1-1.4-1.4L8.6 10 5.3 6.7a1 1 0 0 1 0-1.4Z" /></svg></button>
             </span>
           </div>
           <input v-model="categoryDraft" class="input mt-2" placeholder="Type a category and press Enter" maxlength="100" aria-label="Add category"
             @keydown="onCategoryKey" />
           <div class="mt-2 flex flex-wrap gap-1">
-            <button v-for="s in suggestions" :key="s" type="button" class="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600 hover:border-violet-300 hover:text-violet-700" @click="addCategory(s)">+ {{ s }}</button>
+            <button v-for="s in suggestions" :key="s" type="button" class="chip py-0.5" @click="addCategory(s)">+ {{ s }}</button>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend class="mb-2 text-xs font-semibold text-slate-900">Development services <span class="font-normal text-slate-400">· none = check everything</span></legend>
+          <legend class="mb-2 text-xs font-semibold text-ink">Development services <span class="font-normal text-muted">· none = check everything</span></legend>
           <div class="grid grid-cols-2 gap-2">
             <button v-for="s in SERVICES" :key="s.id" type="button" role="checkbox" :aria-checked="form.services.includes(s.id)"
-              class="rounded-xl border p-2.5 text-left transition" :class="form.services.includes(s.id) ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-200' : 'border-slate-200 hover:border-violet-300'"
+              class="rounded-xl border p-2.5 text-left transition" :class="form.services.includes(s.id) ? 'border-white/60 bg-white/[0.08] shadow-[0_0_20px_-6px_rgb(255_255_255/0.4)]' : 'border-line hover:border-white/25'"
               @click="toggleService(s.id)">
-              <div class="text-xs font-medium text-slate-800">{{ s.label }}</div>
-              <div class="mt-0.5 text-[10px] leading-snug text-slate-500">{{ s.hint }}</div>
+              <div class="text-xs font-medium text-ink">{{ s.label }}</div>
+              <div class="mt-0.5 text-[10px] leading-snug text-silver">{{ s.hint }}</div>
             </button>
           </div>
         </fieldset>
 
         <fieldset class="space-y-3">
-          <legend class="mb-2 text-xs font-semibold text-slate-900">Lead qualification</legend>
+          <legend class="mb-2 text-xs font-semibold text-ink">Lead qualification</legend>
           <div><label class="label" for="cfg-min">Minimum score to qualify · {{ form.minScore }}</label>
-            <input id="cfg-min" v-model.number="form.minScore" type="range" min="0" max="100" step="5" class="w-full accent-violet-600" /></div>
+            <input id="cfg-min" v-model.number="form.minScore" type="range" min="0" max="100" step="5" class="w-full accent-white" /></div>
           <div class="grid grid-cols-2 gap-3">
             <div><label class="label" for="cfg-max">Max businesses</label><input id="cfg-max" v-model.number="form.max" type="number" min="1" max="200" class="input" required /></div>
             <div><label class="label" for="cfg-lang">Outreach language</label>
@@ -168,9 +168,9 @@ async function start() {
         </fieldset>
       </form>
 
-      <footer class="space-y-2 border-t border-slate-100 px-5 py-4">
-        <p v-if="error" class="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800" role="alert">{{ error }}</p>
-        <p v-if="store.activeTask" class="text-[11px] text-amber-700">A run is already in progress; a new one is queued after it.</p>
+      <footer class="space-y-2 border-t border-line px-5 py-4">
+        <p v-if="error" class="rounded-lg bg-bad/10 px-3 py-2 text-xs text-bad" role="alert">{{ error }}</p>
+        <p v-if="store.activeTask" class="text-[11px] text-warn">A run is already in progress; a new one is queued after it.</p>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn-secondary" @click="store.configOpen = false">Cancel</button>
           <button type="submit" form="cfg-form" class="btn-accent" :disabled="busy">{{ busy ? 'Starting…' : 'Start research' }}</button>

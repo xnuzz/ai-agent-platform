@@ -25,15 +25,15 @@ watch(source, async () => {
     <table class="table">
       <thead><tr><th>Business</th><th>Source</th><th>Score</th><th>Problems</th><th>Legal basis</th><th>Status</th></tr></thead>
       <tbody>
-        <tr v-for="l in leads" :key="l.id" class="cursor-pointer hover:bg-slate-50" @click="router.push(`/leads/${l.id}`)">
-            <td><div class="font-medium">{{ l.business.name }}</div><div class="text-xs text-slate-500">{{ l.business.city }} {{ l.business.country_code }} · {{ l.business.domain }}</div></td>
-            <td class="text-xs text-slate-500">{{ agentLabel(l.source) }}</td>
+        <tr v-for="l in leads" :key="l.id" class="cursor-pointer hover:bg-white/[0.03]" @click="router.push(`/leads/${l.id}`)">
+            <td><div class="font-medium">{{ l.business.name }}</div><div class="text-xs text-silver">{{ l.business.city }} {{ l.business.country_code }} · {{ l.business.domain }}</div></td>
+            <td class="text-xs text-silver">{{ agentLabel(l.source) }}</td>
             <td class="tabular-nums">{{ l.score ?? '—' }}</td>
             <td class="text-xs">{{ (l.problems as any[]).map((p) => p.code).join(', ') || '—' }}</td>
-            <td class="text-xs">{{ l.legal_basis }}<span v-if="l.is_suppressed" class="ml-1 text-rose-600">(suppressed)</span></td>
+            <td class="text-xs">{{ l.legal_basis }}<span v-if="l.is_suppressed" class="ml-1 text-bad">(suppressed)</span></td>
             <td><StatusBadge :status="l.status" /></td>
         </tr>
-        <tr v-if="!leads.length"><td colspan="6" class="py-8 text-center text-slate-500">No leads yet.</td></tr>
+        <tr v-if="!leads.length"><td colspan="6" class="py-8 text-center text-silver">No leads yet.</td></tr>
       </tbody>
     </table>
   </div>

@@ -100,59 +100,59 @@ function onTabKey(e: KeyboardEvent) {
 <template>
   <Transition name="lbf-sheet">
     <div v-if="store.detailId" class="fixed inset-0 z-50 flex justify-end">
-      <div class="absolute inset-0 bg-slate-950/30 backdrop-blur-[1px]" aria-hidden="true" @click="store.closeDetail()" />
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-[1px]" aria-hidden="true" @click="store.closeDetail()" />
       <section ref="panel" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="detail-h"
-        class="relative flex h-full w-full flex-col bg-white shadow-2xl outline-none sm:w-[680px] sm:max-w-[92vw] sm:rounded-l-2xl" data-testid="detail-panel">
-        <header class="border-b border-slate-100 px-5 pt-5 pb-3">
+        class="glass-pop relative flex h-full w-full flex-col border-y-0 border-r-0 outline-none sm:w-[680px] sm:max-w-[92vw] sm:rounded-l-[var(--radius-lg)]" data-testid="detail-panel">
+        <header class="border-b border-line px-5 pt-5 pb-3">
           <div class="flex items-start gap-4">
             <LeadScore :score="lead?.score" :size="52" />
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <h2 id="detail-h" class="truncate text-lg font-semibold text-slate-900">{{ b?.name ?? 'Loading…' }}</h2>
-                <span v-if="row" class="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">{{ REVIEW_LABEL[row.review] }}</span>
+                <h2 id="detail-h" class="truncate text-lg font-semibold text-ink">{{ b?.name ?? 'Loading…' }}</h2>
+                <span v-if="row" class="rounded-full bg-white/[0.05] px-2 py-0.5 text-[11px] font-medium text-ink">{{ REVIEW_LABEL[row.review] }}</span>
               </div>
-              <p v-if="lead" class="truncate text-xs text-slate-500">{{ b?.category || 'Uncategorised' }} · {{ locationLabel(lead) }} · {{ POTENTIAL_LABEL[row!.potential] }}</p>
-              <p v-if="lead" class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">Lead <StatusBadge :status="lead.status" />
+              <p v-if="lead" class="truncate text-xs text-silver">{{ b?.category || 'Uncategorised' }} · {{ locationLabel(lead) }} · {{ POTENTIAL_LABEL[row!.potential] }}</p>
+              <p v-if="lead" class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-silver">Lead <StatusBadge :status="lead.status" />
                 <template v-if="brief">· Brief <StatusBadge :status="brief.status" /></template>
                 <template v-if="ws.campaign.value">· Outreach <StatusBadge :status="ws.campaign.value.status" /></template>
               </p>
             </div>
-            <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close details" @click="store.closeDetail()">
+            <button type="button" class="rounded-lg p-1.5 text-muted hover:bg-white/[0.06] hover:text-soft" aria-label="Close details" @click="store.closeDetail()">
               <svg viewBox="0 0 20 20" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M5.3 5.3a1 1 0 0 1 1.4 0L10 8.6l3.3-3.3a1 1 0 1 1 1.4 1.4L11.4 10l3.3 3.3a1 1 0 0 1-1.4 1.4L10 11.4l-3.3 3.3a1 1 0 0 1-1.4-1.4L8.6 10 5.3 6.7a1 1 0 0 1 0-1.4Z" /></svg>
             </button>
           </div>
           <div class="-mb-3 mt-4 flex gap-1 overflow-x-auto" role="tablist" aria-label="Business details" @keydown="onTabKey">
             <button v-for="t in TABS" :id="`tab-${t.id}`" :key="t.id" type="button" role="tab" :aria-selected="tab === t.id" :aria-controls="`panel-${t.id}`"
               :tabindex="tab === t.id ? 0 : -1" class="shrink-0 border-b-2 px-3 py-2 text-xs font-medium transition"
-              :class="tab === t.id ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-800'" @click="tab = t.id">{{ t.label }}</button>
+              :class="tab === t.id ? 'border-white/60 text-ink' : 'border-transparent text-silver hover:text-ink'" @click="tab = t.id">{{ t.label }}</button>
           </div>
         </header>
 
         <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4" :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
-          <p v-if="ws.error.value" class="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800" role="alert">{{ ws.error.value }} <button type="button" class="underline" @click="ws.reload()">Retry</button></p>
-          <div v-if="ws.loading.value" class="space-y-3"><div v-for="i in 4" :key="i" class="h-16 animate-pulse rounded-xl bg-slate-100" /></div>
+          <p v-if="ws.error.value" class="mb-3 rounded-lg bg-bad/10 px-3 py-2 text-xs text-bad" role="alert">{{ ws.error.value }} <button type="button" class="underline" @click="ws.reload()">Retry</button></p>
+          <div v-if="ws.loading.value" class="space-y-3"><div v-for="i in 4" :key="i" class="h-16 animate-pulse rounded-xl bg-white/[0.06]" /></div>
 
           <template v-else-if="lead && b">
             <!-- BUSINESS -->
             <div v-if="tab === 'business'" class="space-y-4">
               <dl class="grid gap-3 sm:grid-cols-2">
-                <div class="rounded-xl border border-slate-200 p-3"><dt class="label">Category</dt><dd class="text-sm text-slate-800">{{ b.category || '—' }}</dd></div>
-                <div class="rounded-xl border border-slate-200 p-3"><dt class="label">Website</dt><dd class="truncate text-sm">
-                  <a v-if="b.website" :href="b.website" target="_blank" rel="noopener noreferrer" class="text-violet-700 hover:underline">{{ b.website }}</a><span v-else class="text-slate-400">None listed</span></dd></div>
-                <div class="rounded-xl border border-slate-200 p-3 sm:col-span-2"><dt class="label">Address</dt>
-                  <dd class="text-sm text-slate-800">{{ [b.address_line1, b.postal_code, b.city, b.region, b.country_code && countryName(b.country_code)].filter(Boolean).join(', ') || '—' }}</dd></div>
-                <div class="rounded-xl border border-slate-200 p-3"><dt class="label">Public e-mail</dt><dd class="truncate text-sm text-slate-800">{{ b.email || lead.contact_email || '—' }}</dd></div>
-                <div class="rounded-xl border border-slate-200 p-3"><dt class="label">Phone</dt><dd class="text-sm text-slate-800">{{ b.phone || lead.contact_phone || '—' }}</dd></div>
-                <div class="rounded-xl border border-slate-200 p-3 sm:col-span-2"><dt class="label">Location</dt>
-                  <dd class="text-sm text-slate-800">
-                    <template v-if="row?.coords">{{ row.coords[1].toFixed(5) }}, {{ row.coords[0].toFixed(5) }} <span class="text-xs text-slate-400">(supplied by the discovery provider)</span></template>
-                    <span v-else class="text-amber-700">No coordinates supplied — not shown on the map.</span>
+                <div class="rounded-xl border border-line p-3"><dt class="label">Category</dt><dd class="text-sm text-ink">{{ b.category || '—' }}</dd></div>
+                <div class="rounded-xl border border-line p-3"><dt class="label">Website</dt><dd class="truncate text-sm">
+                  <a v-if="b.website" :href="b.website" target="_blank" rel="noopener noreferrer" class="text-ink hover:underline">{{ b.website }}</a><span v-else class="text-muted">None listed</span></dd></div>
+                <div class="rounded-xl border border-line p-3 sm:col-span-2"><dt class="label">Address</dt>
+                  <dd class="text-sm text-ink">{{ [b.address_line1, b.postal_code, b.city, b.region, b.country_code && countryName(b.country_code)].filter(Boolean).join(', ') || '—' }}</dd></div>
+                <div class="rounded-xl border border-line p-3"><dt class="label">Public e-mail</dt><dd class="truncate text-sm text-ink">{{ b.email || lead.contact_email || '—' }}</dd></div>
+                <div class="rounded-xl border border-line p-3"><dt class="label">Phone</dt><dd class="text-sm text-ink">{{ b.phone || lead.contact_phone || '—' }}</dd></div>
+                <div class="rounded-xl border border-line p-3 sm:col-span-2"><dt class="label">Location</dt>
+                  <dd class="text-sm text-ink">
+                    <template v-if="row?.coords">{{ row.coords[1].toFixed(5) }}, {{ row.coords[0].toFixed(5) }} <span class="text-xs text-muted">(supplied by the discovery provider)</span></template>
+                    <span v-else class="text-warn">No coordinates supplied — not shown on the map.</span>
                   </dd></div>
               </dl>
-              <p v-if="b.description" class="text-sm text-slate-600">{{ b.description }}</p>
-              <p v-if="lead.is_suppressed" class="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">This contact is on the suppression list — it will never be e-mailed.</p>
-              <p class="text-[11px] text-slate-400">First seen {{ fmtDate(lead.created_at) }} · updated {{ fmtDate(lead.updated_at) }} ·
-                <RouterLink :to="`/leads/${lead.id}`" class="text-violet-700 hover:underline">full lead record (contact, legal basis, status)</RouterLink></p>
+              <p v-if="b.description" class="text-sm text-silver">{{ b.description }}</p>
+              <p v-if="lead.is_suppressed" class="rounded-lg bg-bad/10 px-3 py-2 text-xs text-bad">This contact is on the suppression list — it will never be e-mailed.</p>
+              <p class="text-[11px] text-muted">First seen {{ fmtDate(lead.created_at) }} · updated {{ fmtDate(lead.updated_at) }} ·
+                <RouterLink :to="`/leads/${lead.id}`" class="text-ink hover:underline">full lead record (contact, legal basis, status)</RouterLink></p>
             </div>
 
             <!-- WEBSITE -->
@@ -161,55 +161,55 @@ function onTabKey(e: KeyboardEvent) {
             <!-- OPPORTUNITY -->
             <div v-else-if="tab === 'opportunity'" class="space-y-4">
               <section>
-                <h3 class="mb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Identified problems</h3>
+                <h3 class="mb-2 text-[11px] font-semibold tracking-wider text-silver uppercase">Identified problems</h3>
                 <ul class="space-y-2">
-                  <li v-for="p in problemsOf(lead)" :key="p.code" class="rounded-xl border border-slate-200 p-3">
-                    <div class="flex items-center gap-2"><StatusBadge :status="p.severity" /><span class="text-sm font-medium text-slate-800">{{ p.title || p.code }}</span><span class="ml-auto font-mono text-[10px] text-slate-400">{{ p.code }}</span></div>
-                    <p v-if="p.description" class="mt-1 text-xs text-slate-600">{{ p.description }}</p>
+                  <li v-for="p in problemsOf(lead)" :key="p.code" class="rounded-xl border border-line p-3">
+                    <div class="flex items-center gap-2"><StatusBadge :status="p.severity" /><span class="text-sm font-medium text-ink">{{ p.title || p.code }}</span><span class="ml-auto font-mono text-[10px] text-muted">{{ p.code }}</span></div>
+                    <p v-if="p.description" class="mt-1 text-xs text-silver">{{ p.description }}</p>
                     <div v-if="p.evidence_ids?.length" class="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
                       <template v-for="id in p.evidence_ids" :key="id">
-                        <a v-if="ws.evidenceById.value.get(id)?.url" :href="ws.evidenceById.value.get(id)!.url" target="_blank" rel="noopener noreferrer" class="text-violet-700 hover:underline">
+                        <a v-if="ws.evidenceById.value.get(id)?.url" :href="ws.evidenceById.value.get(id)!.url" target="_blank" rel="noopener noreferrer" class="text-ink hover:underline">
                           Evidence: {{ ws.evidenceById.value.get(id)!.title || ws.evidenceById.value.get(id)!.url }}</a>
                       </template>
                     </div>
                   </li>
-                  <li v-if="!problemsOf(lead).length" class="text-sm text-slate-500">No problems recorded.</li>
+                  <li v-if="!problemsOf(lead).length" class="text-sm text-silver">No problems recorded.</li>
                 </ul>
               </section>
-              <section v-if="brief?.proposed_solution"><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Recommended solution</h3><p class="text-sm whitespace-pre-line text-slate-700">{{ brief.proposed_solution }}</p></section>
-              <section v-if="brief?.summary || lead.qualification_notes"><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Why the business may benefit</h3>
-                <p v-if="brief?.summary" class="text-sm whitespace-pre-line text-slate-700">{{ brief.summary }}</p>
-                <p v-if="lead.qualification_notes" class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs whitespace-pre-line text-slate-600"><span class="font-medium">Scoring:</span> {{ lead.qualification_notes }}</p></section>
-              <section><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Source URLs</h3>
-                <ul class="space-y-1 text-xs"><li v-for="e in evidenceUrls" :key="e.id" class="flex gap-2"><span class="w-24 shrink-0 text-slate-400">{{ e.source_type.replace(/_/g, ' ').toLowerCase() }}</span>
-                  <a :href="e.url" target="_blank" rel="noopener noreferrer" class="truncate text-violet-700 hover:underline">{{ e.url }}</a></li>
-                  <li v-if="!evidenceUrls.length" class="text-slate-400">No source URLs recorded.</li></ul></section>
+              <section v-if="brief?.proposed_solution"><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-silver uppercase">Recommended solution</h3><p class="text-sm whitespace-pre-line text-soft">{{ brief.proposed_solution }}</p></section>
+              <section v-if="brief?.summary || lead.qualification_notes"><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-silver uppercase">Why the business may benefit</h3>
+                <p v-if="brief?.summary" class="text-sm whitespace-pre-line text-soft">{{ brief.summary }}</p>
+                <p v-if="lead.qualification_notes" class="mt-2 rounded-lg bg-white/[0.03] px-3 py-2 text-xs whitespace-pre-line text-silver"><span class="font-medium">Scoring:</span> {{ lead.qualification_notes }}</p></section>
+              <section><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-silver uppercase">Source URLs</h3>
+                <ul class="space-y-1 text-xs"><li v-for="e in evidenceUrls" :key="e.id" class="flex gap-2"><span class="w-24 shrink-0 text-muted">{{ e.source_type.replace(/_/g, ' ').toLowerCase() }}</span>
+                  <a :href="e.url" target="_blank" rel="noopener noreferrer" class="truncate text-ink hover:underline">{{ e.url }}</a></li>
+                  <li v-if="!evidenceUrls.length" class="text-muted">No source URLs recorded.</li></ul></section>
             </div>
 
             <!-- PROJECT -->
             <div v-else-if="tab === 'project'" class="space-y-4">
-              <p v-if="!brief" class="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">No project brief — Agent 2 writes one only for qualified leads.</p>
+              <p v-if="!brief" class="rounded-xl border border-dashed border-line-strong p-4 text-sm text-silver">No project brief — Agent 2 writes one only for qualified leads.</p>
               <template v-else-if="editingBrief">
                 <BriefEditor :brief="brief" :can-write="canAct" @changed="briefChanged" />
                 <button type="button" class="btn-secondary" @click="editingBrief = false">Close editor</button>
               </template>
               <template v-else>
-                <section><h3 class="text-base font-semibold text-slate-900">{{ brief.title }}</h3><p class="mt-1 text-sm whitespace-pre-line text-slate-600">{{ brief.summary }}</p></section>
+                <section><h3 class="text-base font-semibold text-ink">{{ brief.title }}</h3><p class="mt-1 text-sm whitespace-pre-line text-silver">{{ brief.summary }}</p></section>
                 <div class="grid gap-3 sm:grid-cols-3">
-                  <div class="rounded-xl border border-slate-200 p-3"><div class="label">Estimated time</div><div class="text-sm font-medium text-slate-800">{{ effort[0] ?? '?' }}–{{ effort[1] ?? '?' }} h</div><div class="text-[10px] text-slate-400">{{ weeks }}</div></div>
-                  <div class="rounded-xl border border-slate-200 p-3"><div class="label">Complexity</div><div class="text-sm font-medium text-slate-800">{{ complexityOf(effort[1]) ?? '—' }}</div><div class="text-[10px] text-slate-400">derived from effort</div></div>
-                  <div class="rounded-xl border border-slate-200 p-3"><div class="label">Value hypothesis</div>
-                    <div class="text-sm font-medium text-slate-800">{{ brief.estimated_budget_min ?? '?' }}–{{ brief.estimated_budget_max ?? '?' }} {{ brief.currency }}</div><div class="text-[10px] text-slate-400">agent estimate, unvalidated</div></div>
+                  <div class="rounded-xl border border-line p-3"><div class="label">Estimated time</div><div class="text-sm font-medium text-ink">{{ effort[0] ?? '?' }}–{{ effort[1] ?? '?' }} h</div><div class="text-[10px] text-muted">{{ weeks }}</div></div>
+                  <div class="rounded-xl border border-line p-3"><div class="label">Complexity</div><div class="text-sm font-medium text-ink">{{ complexityOf(effort[1]) ?? '—' }}</div><div class="text-[10px] text-muted">derived from effort</div></div>
+                  <div class="rounded-xl border border-line p-3"><div class="label">Value hypothesis</div>
+                    <div class="text-sm font-medium text-ink">{{ brief.estimated_budget_min ?? '?' }}–{{ brief.estimated_budget_max ?? '?' }} {{ brief.currency }}</div><div class="text-[10px] text-muted">agent estimate, unvalidated</div></div>
                 </div>
-                <section><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Required features</h3>
-                  <ul class="list-disc space-y-0.5 pl-5 text-sm text-slate-700"><li v-for="s in (brief.scope_items as string[])" :key="s">{{ s }}</li></ul></section>
-                <section v-if="(brief.tech_stack as string[]).length"><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Suggested technology</h3>
-                  <div class="flex flex-wrap gap-1.5"><span v-for="t in (brief.tech_stack as string[])" :key="t" class="rounded-full bg-violet-50 px-2.5 py-0.5 text-xs text-violet-700">{{ t }}</span></div></section>
-                <p v-if="ws.latestBriefDecision.value?.decision_comment" class="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-900">
+                <section><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-silver uppercase">Required features</h3>
+                  <ul class="list-disc space-y-0.5 pl-5 text-sm text-soft"><li v-for="s in (brief.scope_items as string[])" :key="s">{{ s }}</li></ul></section>
+                <section v-if="(brief.tech_stack as string[]).length"><h3 class="mb-1 text-[11px] font-semibold tracking-wider text-silver uppercase">Suggested technology</h3>
+                  <div class="flex flex-wrap gap-1.5"><span v-for="t in (brief.tech_stack as string[])" :key="t" class="rounded-full bg-white/[0.05] px-2.5 py-0.5 text-xs text-ink">{{ t }}</span></div></section>
+                <p v-if="ws.latestBriefDecision.value?.decision_comment" class="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
                   Latest review ({{ ws.latestBriefDecision.value.status.replace(/_/g, ' ') }}): “{{ ws.latestBriefDecision.value.decision_comment }}”</p>
-                <div class="border-t border-slate-100 pt-3">
+                <div class="border-t border-line pt-3">
                   <button type="button" class="btn-secondary" :disabled="!canAct || !['DRAFT', 'CHANGES_REQUESTED'].includes(brief.status)" @click="editingBrief = true">Edit project</button>
-                  <p v-if="!['DRAFT', 'CHANGES_REQUESTED'].includes(brief.status)" class="mt-1 text-[11px] text-slate-400">Editable only while DRAFT or CHANGES REQUESTED (now {{ brief.status.replace(/_/g, ' ') }}). Use “Request more research” to send it back.</p>
+                  <p v-if="!['DRAFT', 'CHANGES_REQUESTED'].includes(brief.status)" class="mt-1 text-[11px] text-muted">Editable only while DRAFT or CHANGES REQUESTED (now {{ brief.status.replace(/_/g, ' ') }}). Use “Request more research” to send it back.</p>
                 </div>
               </template>
             </div>
@@ -220,17 +220,17 @@ function onTabKey(e: KeyboardEvent) {
           </template>
         </div>
 
-        <footer class="space-y-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3 sm:rounded-bl-2xl">
+        <footer class="space-y-2 border-t border-line bg-white/[0.03] px-5 py-3 sm:rounded-bl-2xl">
           <textarea v-model="comment" rows="1" class="input resize-none text-xs" placeholder="Comment for the decision (required for “Request more research”)" aria-label="Decision comment" :disabled="!canAct" />
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" class="btn-accent" :disabled="busy || !canAct || !pendingBrief" :title="approveHint" data-testid="approve-lead" @click="approveLead">Approve lead</button>
             <button type="button" :class="armedArchive ? 'btn-danger' : 'btn-secondary'" :disabled="busy || !rejectEnabled" data-testid="reject-lead" @click="rejectLead">
               {{ pendingBrief ? 'Reject lead' : armedArchive ? 'Confirm: archive lead' : 'Reject lead' }}</button>
             <button type="button" class="btn-secondary" :disabled="busy || !canAct || !pendingBrief" data-testid="request-more" @click="requestMore">Request more research</button>
-            <span v-if="notice" class="text-xs text-emerald-700" role="status">{{ notice }}</span>
+            <span v-if="notice" class="text-xs text-ok" role="status">{{ notice }}</span>
           </div>
-          <p v-if="error" class="text-xs text-rose-700" role="alert">{{ error }}</p>
-          <p class="text-[11px] text-slate-500">{{ pendingBrief ? 'Decisions apply to the project brief approval. Request more research returns it with your comment (Agent 2 does not re-run automatically yet).' : approveHint }}
+          <p v-if="error" class="text-xs text-bad" role="alert">{{ error }}</p>
+          <p class="text-[11px] text-silver">{{ pendingBrief ? 'Decisions apply to the project brief approval. Request more research returns it with your comment (Agent 2 does not re-run automatically yet).' : approveHint }}
             <template v-if="!pendingBrief && archivable && canAct"> Reject archives the lead (final).</template></p>
         </footer>
       </section>

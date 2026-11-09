@@ -4,6 +4,7 @@ import App from './App.vue'
 import { router } from './router'
 import { session } from './api/client'
 import { useAuthStore } from './stores/auth'
+import '@fontsource-variable/inter'
 import './style.css'
 
 const app = createApp(App).use(createPinia())

@@ -42,24 +42,24 @@ const approve = () => run(async () => { if (props.pending) { await api.decide(pr
 
 <template>
   <div class="space-y-4">
-    <p v-if="!campaign" class="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+    <p v-if="!campaign" class="rounded-xl border border-dashed border-line-strong p-4 text-sm text-silver">
       No outreach was drafted for this lead<template v-if="lead.is_suppressed"> — the contact is on the suppression list</template><template v-else-if="!recipient"> — no usable business e-mail was found</template>.
     </p>
     <template v-else>
       <div class="grid gap-3 sm:grid-cols-3">
-        <div class="rounded-xl border border-slate-200 p-3 text-xs"><div class="label">Channel</div><div class="font-medium text-slate-800">{{ campaign.channel }} · step 1</div></div>
-        <div class="rounded-xl border border-slate-200 p-3 text-xs"><div class="label">Recipient</div><div class="truncate font-medium text-slate-800">{{ recipient || '—' }}</div><div class="text-slate-500">{{ lead.contact_email_type?.replace(/_/g, ' ').toLowerCase() }}</div></div>
-        <div class="rounded-xl border border-slate-200 p-3 text-xs"><div class="label">Legal basis</div>
-          <div class="font-medium" :class="lead.legal_basis === 'UNKNOWN' ? 'text-amber-700' : 'text-slate-800'">{{ lead.legal_basis?.replace(/_/g, ' ') }}</div>
-          <div v-if="lead.legal_basis === 'UNKNOWN'" class="text-[10px] text-amber-700">Sending is blocked until set on the lead</div></div>
+        <div class="rounded-xl border border-line p-3 text-xs"><div class="label">Channel</div><div class="font-medium text-ink">{{ campaign.channel }} · step 1</div></div>
+        <div class="rounded-xl border border-line p-3 text-xs"><div class="label">Recipient</div><div class="truncate font-medium text-ink">{{ recipient || '—' }}</div><div class="text-silver">{{ lead.contact_email_type?.replace(/_/g, ' ').toLowerCase() }}</div></div>
+        <div class="rounded-xl border border-line p-3 text-xs"><div class="label">Legal basis</div>
+          <div class="font-medium" :class="lead.legal_basis === 'UNKNOWN' ? 'text-warn' : 'text-ink'">{{ lead.legal_basis?.replace(/_/g, ' ') }}</div>
+          <div v-if="lead.legal_basis === 'UNKNOWN'" class="text-[10px] text-warn">Sending is blocked until set on the lead</div></div>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-xs">
-        <span class="text-slate-500">Campaign</span><StatusBadge :status="campaign.status" />
-        <span v-if="message" class="text-slate-500">· message</span><StatusBadge v-if="message" :status="message.status" />
-        <RouterLink :to="`/campaigns/${campaign.id}`" class="ml-auto font-medium text-violet-700 hover:underline">Open campaign ↗</RouterLink>
+        <span class="text-silver">Campaign</span><StatusBadge :status="campaign.status" />
+        <span v-if="message" class="text-silver">· message</span><StatusBadge v-if="message" :status="message.status" />
+        <RouterLink :to="`/campaigns/${campaign.id}`" class="ml-auto font-medium text-ink hover:underline">Open campaign ↗</RouterLink>
       </div>
 
-      <form v-if="editing" class="space-y-3 rounded-xl border border-violet-200 bg-violet-50/40 p-3" @submit.prevent="save">
+      <form v-if="editing" class="space-y-3 rounded-xl border border-white/25 bg-white/[0.05] p-3" @submit.prevent="save">
         <div><label class="label" for="o-subj">Subject</label><input id="o-subj" v-model="form.subject" class="input" required maxlength="300" /></div>
         <div><label class="label" for="o-body">Message (plain text — sender identity and opt-out footer are added by the platform)</label>
           <textarea id="o-body" v-model="form.body" rows="9" class="input font-mono text-xs" required /></div>
@@ -72,32 +72,32 @@ const approve = () => run(async () => { if (props.pending) { await api.decide(pr
         <div class="flex gap-2"><button class="btn-accent" :disabled="busy">Save outreach</button><button type="button" class="btn-secondary" @click="editing = false">Discard</button></div>
       </form>
       <template v-else>
-        <section class="rounded-xl border border-slate-200">
-          <div class="border-b border-slate-100 px-3 py-2 text-xs"><span class="text-slate-500">Subject:</span> <span class="font-medium text-slate-800">{{ message?.subject || '—' }}</span></div>
-          <pre class="max-h-72 overflow-y-auto px-3 py-2 font-sans text-xs whitespace-pre-wrap text-slate-700">{{ message?.body || 'No message for this lead in the campaign.' }}</pre>
+        <section class="rounded-xl border border-line">
+          <div class="border-b border-line px-3 py-2 text-xs"><span class="text-silver">Subject:</span> <span class="font-medium text-ink">{{ message?.subject || '—' }}</span></div>
+          <pre class="max-h-72 overflow-y-auto px-3 py-2 font-sans text-xs whitespace-pre-wrap text-soft">{{ message?.body || 'No message for this lead in the campaign.' }}</pre>
         </section>
-        <section class="rounded-xl bg-slate-50 p-3 text-xs">
+        <section class="rounded-xl bg-white/[0.03] p-3 text-xs">
           <div class="label">Suggested offer</div>
-          <div class="font-medium text-slate-800">{{ offer.headline || '—' }}</div>
-          <p v-if="offer.value_proposition" class="mt-1 line-clamp-4 text-slate-600">{{ offer.value_proposition }}</p>
-          <div class="mt-2 grid gap-2 sm:grid-cols-2"><div><span class="text-slate-500">Pricing:</span> {{ offer.pricing || '—' }}</div><div><span class="text-slate-500">Call to action:</span> {{ offer.call_to_action || '—' }}</div></div>
+          <div class="font-medium text-ink">{{ offer.headline || '—' }}</div>
+          <p v-if="offer.value_proposition" class="mt-1 line-clamp-4 text-silver">{{ offer.value_proposition }}</p>
+          <div class="mt-2 grid gap-2 sm:grid-cols-2"><div><span class="text-silver">Pricing:</span> {{ offer.pricing || '—' }}</div><div><span class="text-silver">Call to action:</span> {{ offer.call_to_action || '—' }}</div></div>
         </section>
       </template>
-      <section class="rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-500">
+      <section class="rounded-xl border border-dashed border-line-strong p-3 text-xs text-silver">
         <div class="label">Follow-up message</div>
         Not available: v1 sends only the first e-mail (follow-up sequences need reply detection — ADR-008).
       </section>
-      <p v-if="others" class="text-[11px] text-slate-500">This campaign contains {{ others }} other message(s); approving approves the whole campaign.</p>
+      <p v-if="others" class="text-[11px] text-silver">This campaign contains {{ others }} other message(s); approving approves the whole campaign.</p>
     </template>
 
-    <p v-if="error" class="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800" role="alert">{{ error }}</p>
-    <p v-if="notice" class="text-xs text-emerald-700" role="status">{{ notice }}</p>
-    <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+    <p v-if="error" class="rounded-lg bg-bad/10 px-3 py-2 text-xs text-bad" role="alert">{{ error }}</p>
+    <p v-if="notice" class="text-xs text-ok" role="status">{{ notice }}</p>
+    <div class="flex flex-wrap items-center gap-2 border-t border-line pt-3">
       <button type="button" class="btn-secondary" :disabled="busy || !!editHint || editing" :title="editHint" @click="startEdit">Edit outreach</button>
       <button v-if="submittable && canWrite" type="button" class="btn-secondary" :disabled="busy || editing" @click="submit">Submit for approval</button>
       <button type="button" class="btn-accent" :disabled="busy || !pending || !canWrite" :title="pending ? '' : 'No pending outreach approval'" @click="approve">Approve outreach</button>
-      <span v-if="editHint && campaign" class="w-full text-[11px] text-slate-400">{{ editHint }}</span>
-      <span v-if="!pending && campaign" class="w-full text-[11px] text-slate-400">Approve outreach needs a pending approval (campaign is {{ campaign.status.replace(/_/g, ' ') }}).</span>
+      <span v-if="editHint && campaign" class="w-full text-[11px] text-muted">{{ editHint }}</span>
+      <span v-if="!pending && campaign" class="w-full text-[11px] text-muted">Approve outreach needs a pending approval (campaign is {{ campaign.status.replace(/_/g, ' ') }}).</span>
     </div>
   </div>
 </template>
