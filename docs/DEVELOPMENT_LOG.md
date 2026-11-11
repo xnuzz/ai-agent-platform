@@ -4,6 +4,14 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-11 — Team 3 — Celery worker/beat crash fix
+
+- `backend/requirements.txt`: added `packaging>=24`. `kombu.transport.redis` imports it without declaring it, so `worker` and `beat` exited on start in a fresh `python:3.13-slim` image (`ModuleNotFoundError: No module named 'packaging'`).
+- `layouts/AppLayout.vue`: routed view wrapped in one root element so the page `<Transition>` can animate multi-root views (Vue warning).
+- **Tests:** rebuilt with `docker compose up --build`; worker logs `celery@… ready`, beat running. `npm run build` passes. `pytest` not re-run.
+
+---
+
 ## 2026-11-11 — Team 3 — merged cloud branches into `main` (local)
 
 - Merged `claude/fervent-tesla-4z396z` (glass redesign) and `claude/new-session-54ipze` (decide reviews from detail pages) on top of `origin/main` (incl. PR #3 Local Business Finder).

@@ -8,5 +8,6 @@ psycopg[binary]>=3.2
 dj-database-url>=2.2
 celery>=5.4,<6
 redis>=5
+packaging>=24  # kombu.transport.redis imports it without declaring it
 cryptography>=43
 gunicorn>=22
