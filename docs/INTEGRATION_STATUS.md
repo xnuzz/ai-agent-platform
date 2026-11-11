@@ -22,7 +22,8 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | OpenAPI schema + generated TS types | ✅ | `docs/openapi.yaml`, `frontend/src/api/schema.d.ts` |
 | `agents/platform_sdk` (client + worker + keepalive) | ✅ | Used by E2E tests |
 | Vue: login/register, dashboard, tasks (both agents), task detail, approval center, ideas, leads+briefs, campaigns+messages, suppression, settings, unsubscribe | ✅ | Browser smoke-tested (Playwright) |
-| Browser e2e suite (`frontend/e2e`, Playwright, 13 tests, mock agents) | ✅ | Runs in CI `e2e` job |
+| Browser e2e suite (`frontend/e2e`, Playwright, 14 tests, mock agents) | ✅ | Runs in CI `e2e` job |
+| Vue: decide a PENDING review in place on idea / project brief / campaign pages (Approve · Request changes · Reject + comment); locked fields visibly disabled | ✅ | Same `approvals/{id}/decide/` endpoint as the Approval center (DEVELOPER+); browser-tested |
 | Vue: edit + resubmit idea / project brief / campaign offer / messages (CHANGES_REQUESTED loop, reviewer comment shown) | ✅ | Browser-tested (Playwright, 16 checks) |
 | Vue: lead detail (contact, legal basis, status moves), opportunity curation, members, integrations (write-only secret), audit log | ✅ | Browser-tested; audit log ADMIN-only route |
 | Vue: member invitations, integration "test connection", audit export | ⬜ | Backend support missing |

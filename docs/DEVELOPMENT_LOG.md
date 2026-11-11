@@ -4,6 +4,14 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-11 — Team 3 — merged cloud branches into `main` (local)
+
+- Merged `claude/fervent-tesla-4z396z` (glass redesign) and `claude/new-session-54ipze` (decide reviews from detail pages) on top of `origin/main` (incl. PR #3 Local Business Finder).
+- Conflicts resolved: `style.css` keeps the redesign tokens; the locked-field `.input:disabled` style was re-expressed in dark tokens (keeps `cursor: not-allowed`, checked by e2e). `LatestDecision.vue` keeps the in-place decide UI, recoloured to dark tokens (`warn`/`bad`/`line`/`silver`).
+- **Tests:** `npm run build` passes. Playwright and `pytest` not re-run in this merge (no backend change).
+
+---
+
 ## 2026-11-09 — Frontend redesign session — monochrome "deep space" glass UI
 
 **Implemented (visual/UX only; no API, store or business-logic changes)**
@@ -39,6 +47,23 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 **Mocked:** demo feed (dev only); the e2e agent (`seed.py stream`) is a mock with fixed fictional data. **Not verified:** real basemap tiles (host blocked here), real Agent 2 discovery data.
 **Not implemented / blocked:** pause/resume (no platform support — requested), push events (polling), follow-up messages (ADR-008).
 **Next:** verify tiles on a networked machine; Team 3 decisions on pause/resume, SSE and lead filters (INTEGRATION_STATUS › Requests).
+
+---
+
+## 2026-11-09 — Team 3 — Session 4: decide reviews from detail pages
+
+**Trigger:** idea detail page for a `WAITING_FOR_APPROVAL` idea was a dead end. It showed "Latest review: PENDING, awaiting decision" but gave no way to decide, and the locked fields looked editable.
+
+**Implemented**
+- `LatestDecision`: new `canDecide` / `approveHint` props and a `decided` event. While the latest approval is `PENDING`, reviewers get Approve / Request changes / Reject plus a comment box in place (calls `approvals/{id}/decide/`; the backend still enforces role, state and stale-content checks). The agent's request summary is shown too.
+- Wired into idea detail (hint: approving queues Agent 1 customer research), `BriefEditor` (lead page) and campaign detail (hint: approving sends nothing). Each page reloads after a decision, so `CHANGES_REQUESTED` unlocks editing right away.
+- `.input` now has disabled styling (muted background, `not-allowed` cursor, no resize handle), which also applies inside a disabled `<fieldset>`. `LinesInput` hides its placeholder when disabled.
+
+**Files:** `frontend/src/components/{LatestDecision,BriefEditor,LinesInput}.vue`, `frontend/src/views/{IdeaDetailView,CampaignDetailView}.vue`, `frontend/src/style.css`, `frontend/e2e/edit-flows.spec.ts`.
+**API/DB/deps:** none. No contract change.
+**Tests:** `npm run build` passes. Playwright 14/14 locally against Postgres 16 (new test: idea is locked and looks disabled while pending, then Request changes in place unlocks editing).
+**Not done:** `pytest` not re-run (no backend change).
+**Noted, not changed (Team 1 dir):** with mock providers, Agent 1's fake LLM writes a Python list into idea text (`"(sources ['S16', 'S17'])"`, `saas_research/llm/fake_provider.py`). This only affects 🧪 mock output.
 
 ---
 

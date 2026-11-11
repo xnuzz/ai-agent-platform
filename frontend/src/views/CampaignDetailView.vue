@@ -56,6 +56,7 @@ const submit = () => run(async () => {
   await load()
   reviewKey.value++
 }, 'Submitted for approval.')
+const decided = () => run(load, 'Decision recorded.')
 const action = (a: 'launch' | 'pause' | 'cancel') => run(async () => { await api.post(`campaigns/${props.id}/${a}/`); await load() })
 const cancelMsg = (id: string) => run(async () => { await api.post(`outreach-messages/${id}/cancel/`); await load() })
 </script>
@@ -77,7 +78,8 @@ const cancelMsg = (id: string) => run(async () => { await api.post(`outreach-mes
     </div>
 
     <form class="card mb-4 space-y-4" @submit.prevent="saveCampaign">
-      <LatestDecision :target-id="campaign.id" :refresh-key="reviewKey" />
+      <LatestDecision :target-id="campaign.id" :refresh-key="reviewKey" :can-decide="auth.canWrite()"
+        approve-hint="Approving sends nothing — launch is a separate step." @decided="decided" />
       <fieldset :disabled="!editable" class="grid gap-4 md:grid-cols-2">
         <div class="md:col-span-2"><label class="label">Campaign name</label><input v-model="form.name" class="input" required maxlength="300" /></div>
         <div><label class="label">Offer headline</label><input v-model="form.offer.headline" class="input" /></div>

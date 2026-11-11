@@ -114,6 +114,8 @@
     @apply w-full rounded-[var(--radius-sm)] border border-line-strong bg-white/[0.03] px-3 py-2 text-sm text-ink placeholder:text-muted disabled:opacity-60;
     transition: border-color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), background-color var(--dur-2);
   }
+  /* Locked fields (incl. inside a disabled <fieldset>) must not look editable. */
+  .input:disabled { @apply cursor-not-allowed resize-none border-line bg-white/[0.015] text-silver; }
   .input:hover:not(:disabled) { @apply border-white/25; }
   .input:focus { @apply border-white/70 bg-white/[0.05] outline-none; box-shadow: 0 0 0 3px rgb(255 255 255 / 0.08); }
   select.input { @apply pr-8; }
