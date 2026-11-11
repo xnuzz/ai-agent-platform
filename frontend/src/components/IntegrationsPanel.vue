@@ -52,11 +52,11 @@ const remove = (i: Integration) => {
           <tr v-for="i in items" :key="i.id">
             <td class="font-medium">{{ i.name }}</td><td class="text-xs">{{ i.kind }} · {{ i.provider }}</td>
             <td class="text-xs">{{ i.has_secret ? 'stored (hidden)' : 'none' }}</td><td><StatusBadge :status="i.status" /></td>
-            <td class="text-xs text-slate-500">{{ fmtDate(i.updated_at) }}</td>
+            <td class="text-xs text-silver">{{ fmtDate(i.updated_at) }}</td>
             <td class="text-right whitespace-nowrap"><template v-if="auth.isAdmin()">
-              <button class="mr-3 text-xs text-indigo-600" @click="editForm(i)">Edit</button><button class="text-xs text-rose-600" @click="remove(i)">Delete</button></template></td>
+              <button class="mr-3 text-xs text-ink" @click="editForm(i)">Edit</button><button class="text-xs text-bad" @click="remove(i)">Delete</button></template></td>
           </tr>
-          <tr v-if="!items.length"><td colspan="6" class="py-6 text-center text-slate-500">No integrations. Outreach uses the platform's default mail transport.</td></tr>
+          <tr v-if="!items.length"><td colspan="6" class="py-6 text-center text-silver">No integrations. Outreach uses the platform's default mail transport.</td></tr>
         </tbody>
       </table>
     </div>
@@ -72,7 +72,7 @@ const remove = (i: Integration) => {
       <div><label class="label">Config (JSON, non-secret only)</label><textarea v-model="form.configText" rows="6" class="input font-mono text-xs" /></div>
       <div><label class="label">Secret (password / API key) — write-only, encrypted at rest{{ form.id ? '; leave empty to keep current' : '' }}</label>
         <input v-model="form.secret" type="password" autocomplete="new-password" class="input" /></div>
-      <p v-if="form.kind === 'EMAIL' && form.provider === 'SMTP'" class="text-xs text-slate-500">An ACTIVE SMTP integration is used for all outreach sent from this workspace.</p>
+      <p v-if="form.kind === 'EMAIL' && form.provider === 'SMTP'" class="text-xs text-silver">An ACTIVE SMTP integration is used for all outreach sent from this workspace.</p>
       <div class="flex gap-2"><button class="btn-primary" :disabled="busy">Save</button><button type="button" class="btn-secondary" @click="form = null">Cancel</button></div>
     </form>
   </section>

@@ -21,15 +21,15 @@ const submit = () => run(async () => {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center px-4">
-    <form class="card w-full max-w-sm space-y-4" @submit.prevent="submit">
+  <div class="flex min-h-dvh items-center justify-center px-4">
+    <form class="glass-pop fade-in w-full max-w-sm space-y-4 rounded-[var(--radius-lg)] p-6" @submit.prevent="submit">
       <h1 class="text-xl font-semibold">Choose a new password</h1>
       <template v-if="done">
         <p class="text-sm">Your password was changed and all other sessions were signed out.</p>
         <RouterLink to="/login" class="btn-primary w-full justify-center">Sign in</RouterLink>
       </template>
       <template v-else-if="!uid || !token">
-        <p class="text-sm text-rose-700">This link is incomplete. Request a new one from the sign-in page.</p>
+        <p class="text-sm text-bad">This link is incomplete. Request a new one from the sign-in page.</p>
       </template>
       <template v-else>
         <ErrorBanner :message="error" />

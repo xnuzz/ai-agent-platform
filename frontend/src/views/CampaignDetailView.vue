@@ -85,18 +85,18 @@ const cancelMsg = (id: string) => run(async () => { await api.post(`outreach-mes
         <div><label class="label">Value proposition</label><textarea v-model="form.offer.value_proposition" rows="3" class="input" /></div>
         <div><label class="label">Pricing</label><textarea v-model="form.offer.pricing" rows="3" class="input" /></div>
       </fieldset>
-      <div v-if="editable" class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+      <div v-if="editable" class="flex flex-wrap items-center gap-3 border-t border-line pt-4">
         <button class="btn-secondary" :disabled="busy || !campaignDirty">Save campaign</button>
         <input v-model="note" class="input max-w-xs" placeholder="Note for the reviewer (optional)" />
         <button type="button" class="btn-primary" :disabled="busy || !draftCount" @click="submit">Submit {{ draftCount }} message(s) for approval</button>
       </div>
-      <p v-else-if="auth.canWrite() && campaign.status === 'WAITING_FOR_APPROVAL'" class="text-xs text-slate-500">Locked while waiting for approval. You can still exclude individual messages.</p>
+      <p v-else-if="auth.canWrite() && campaign.status === 'WAITING_FOR_APPROVAL'" class="text-xs text-silver">Locked while waiting for approval. You can still exclude individual messages.</p>
     </form>
 
     <div class="space-y-3">
       <article v-for="m in messages" :key="m.id" class="card">
         <div class="flex items-start justify-between gap-2">
-          <div><div class="text-xs text-slate-500">To {{ m.business_name }} &lt;{{ m.to_email }}&gt;</div>
+          <div><div class="text-xs text-silver">To {{ m.business_name }} &lt;{{ m.to_email }}&gt;</div>
             <div v-if="editing !== m.id" class="font-medium">{{ m.subject }}</div></div>
           <div class="flex items-center gap-2"><StatusBadge :status="m.status" />
             <button v-if="editable && m.status === 'DRAFT' && editing !== m.id" class="btn-secondary" @click="startEdit(m)">Edit</button>
@@ -109,8 +109,8 @@ const cancelMsg = (id: string) => run(async () => { await api.post(`outreach-mes
             <textarea v-model="drafts[m.id]!.body" rows="10" class="input font-mono text-xs" required /></div>
           <div class="flex gap-2"><button class="btn-primary" :disabled="busy">Save message</button><button type="button" class="btn-secondary" @click="editing = null">Discard</button></div>
         </form>
-        <pre v-else class="mt-2 font-sans text-sm whitespace-pre-wrap text-slate-700">{{ m.body }}</pre>
-        <div v-if="m.error && Object.keys(m.error).length" class="mt-2 text-xs text-rose-700">{{ (m.error as any).code }} {{ ((m.error as any).reasons ?? []).join(', ') }}</div>
+        <pre v-else class="mt-2 font-sans text-sm whitespace-pre-wrap text-soft">{{ m.body }}</pre>
+        <div v-if="m.error && Object.keys(m.error).length" class="mt-2 text-xs text-bad">{{ (m.error as any).code }} {{ ((m.error as any).reasons ?? []).join(', ') }}</div>
       </article>
     </div>
   </template>

@@ -39,10 +39,10 @@ async function remove(id: string) {
       <thead><tr><th>Type</th><th>Value</th><th>Reason</th><th>Source</th><th>Added</th><th /></tr></thead>
       <tbody>
         <tr v-for="e in entries" :key="e.id">
-          <td>{{ e.type }}</td><td class="font-mono text-xs">{{ e.value }}</td><td>{{ e.reason }}</td><td class="text-xs">{{ e.source }}</td><td class="text-slate-500">{{ fmtDate(e.created_at) }}</td>
-          <td><button v-if="auth.isAdmin()" class="text-xs text-rose-600" @click="remove(e.id)">Remove</button></td>
+          <td>{{ e.type }}</td><td class="font-mono text-xs">{{ e.value }}</td><td>{{ e.reason }}</td><td class="text-xs">{{ e.source }}</td><td class="text-silver">{{ fmtDate(e.created_at) }}</td>
+          <td><button v-if="auth.isAdmin()" class="text-xs text-bad" @click="remove(e.id)">Remove</button></td>
         </tr>
-        <tr v-if="!entries.length"><td colspan="6" class="py-8 text-center text-slate-500">Empty.</td></tr>
+        <tr v-if="!entries.length"><td colspan="6" class="py-8 text-center text-silver">Empty.</td></tr>
       </tbody>
     </table>
   </div>

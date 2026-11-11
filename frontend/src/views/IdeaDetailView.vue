@@ -60,9 +60,9 @@ const labels: Record<string, string> = {
     </PageHeader>
     <ErrorBanner :message="error" />
     <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
-      <StatusBadge :status="idea.status" /><span class="text-slate-500">Score {{ idea.score ?? '—' }}</span>
-      <RouterLink v-if="idea.research_task" :to="`/tasks/${idea.research_task}`" class="text-indigo-600">Source task</RouterLink>
-      <span v-if="!editable && auth.canWrite()" class="text-xs text-slate-500">Locked — only DRAFT or CHANGES_REQUESTED ideas can be edited.</span>
+      <StatusBadge :status="idea.status" /><span class="text-silver">Score {{ idea.score ?? '—' }}</span>
+      <RouterLink v-if="idea.research_task" :to="`/tasks/${idea.research_task}`" class="text-ink">Source task</RouterLink>
+      <span v-if="!editable && auth.canWrite()" class="text-xs text-silver">Locked — only DRAFT or CHANGES_REQUESTED ideas can be edited.</span>
       <Notice :notice="notice" />
     </div>
     <div class="grid gap-4 lg:grid-cols-3">
@@ -79,7 +79,7 @@ const labels: Record<string, string> = {
             <div><label class="label">Risks</label><LinesInput v-model="form.risks" :disabled="!editable" /></div>
           </div>
         </fieldset>
-        <div v-if="editable" class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+        <div v-if="editable" class="flex flex-wrap items-center gap-3 border-t border-line pt-4">
           <button class="btn-secondary" :disabled="busy || !dirty">Save draft</button>
           <input v-model="summary" class="input max-w-sm" placeholder="Note for the reviewer (optional)" />
           <button type="button" class="btn-primary" :disabled="busy" @click="submit">Save &amp; submit for approval</button>
@@ -89,11 +89,11 @@ const labels: Record<string, string> = {
         <h3 class="mb-2 text-sm font-medium">Evidence</h3>
         <ul class="space-y-2 text-sm">
           <li v-for="e in evidence" :key="e.id">
-            <a :href="e.url" target="_blank" rel="noopener noreferrer" class="text-indigo-600">{{ e.title || e.url }}</a>
-            <span class="ml-1 text-xs text-slate-400">{{ e.source_type }}</span>
-            <p v-if="e.excerpt" class="mt-0.5 text-xs text-slate-500">“{{ e.excerpt }}”</p>
+            <a :href="e.url" target="_blank" rel="noopener noreferrer" class="text-ink">{{ e.title || e.url }}</a>
+            <span class="ml-1 text-xs text-muted">{{ e.source_type }}</span>
+            <p v-if="e.excerpt" class="mt-0.5 text-xs text-silver">“{{ e.excerpt }}”</p>
           </li>
-          <li v-if="!evidence.length" class="text-slate-500">No evidence linked.</li>
+          <li v-if="!evidence.length" class="text-silver">No evidence linked.</li>
         </ul>
       </aside>
     </div>

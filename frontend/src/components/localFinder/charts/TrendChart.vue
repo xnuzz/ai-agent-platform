@@ -18,7 +18,7 @@ const x = (i: number) => PAD.l + (props.points.length <= 1 ? (width.value - PAD.
 const y = (v: number) => PAD.t + (1 - v / max.value) * (H - PAD.t - PAD.b)
 const line = computed(() => props.points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.cumulative).toFixed(1)}`).join(''))
 const area = computed(() => props.points.length ? `${line.value}L${x(props.points.length - 1).toFixed(1)},${y(0)}L${x(0).toFixed(1)},${y(0)}Z` : '')
-const ticks = computed(() => [0, max.value / 2, max.value])
+const ticks = computed(() => [...new Set([0, Math.round(max.value / 2), max.value])])
 const xLabels = computed(() => {
   const n = props.points.length
   if (!n) return []
@@ -46,22 +46,22 @@ const hp = computed(() => (hover.value != null ? props.points[hover.value] : nul
       tabindex="0" @pointermove="onMove" @pointerleave="hover = null" @focus="hover = points.length - 1" @blur="hover = null"
       @keydown.left.prevent="hover = Math.max(0, (hover ?? points.length) - 1)" @keydown.right.prevent="hover = Math.min(points.length - 1, (hover ?? -1) + 1)">
       <g v-for="t in ticks" :key="t">
-        <line :x1="PAD.l" :x2="width - PAD.r" :y1="y(t)" :y2="y(t)" stroke="#eef0f4" />
-        <text :x="PAD.l - 6" :y="y(t) + 3" text-anchor="end" class="fill-slate-400 text-[10px] tabular-nums">{{ Math.round(t) }}</text>
+        <line :x1="PAD.l" :x2="width - PAD.r" :y1="y(t)" :y2="y(t)" stroke="var(--line)" />
+        <text :x="PAD.l - 6" :y="y(t) + 3" text-anchor="end" class="fill-muted text-[10px] tabular-nums">{{ Math.round(t) }}</text>
       </g>
-      <path :d="area" fill="#7c3aed" fill-opacity="0.1" />
-      <path :d="line" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
-      <circle v-if="points.length" :cx="x(points.length - 1)" :cy="y(points[points.length - 1]!.cumulative)" r="4" fill="#7c3aed" stroke="#fff" stroke-width="2" />
-      <text v-for="l in xLabels" :key="l.i" :x="x(l.i)" :y="H - 5" :text-anchor="l.anchor" class="fill-slate-400 text-[10px]">{{ l.label }}</text>
+      <path :d="area" fill="#fff" fill-opacity="0.07" />
+      <path :d="line" fill="none" stroke="#fff" stroke-width="2" class="line-glow" stroke-linejoin="round" stroke-linecap="round" />
+      <circle v-if="points.length" :cx="x(points.length - 1)" :cy="y(points[points.length - 1]!.cumulative)" r="4" fill="#fff" stroke="#050505" stroke-width="2" class="dot-glow" />
+      <text v-for="l in xLabels" :key="l.i" :x="x(l.i)" :y="H - 5" :text-anchor="l.anchor" class="fill-muted text-[10px]">{{ l.label }}</text>
       <g v-if="hp && hover != null">
-        <line :x1="x(hover)" :x2="x(hover)" :y1="PAD.t" :y2="H - PAD.b" stroke="#c4b5fd" />
-        <circle :cx="x(hover)" :cy="y(hp.cumulative)" r="4.5" fill="#7c3aed" stroke="#fff" stroke-width="2" />
+        <line :x1="x(hover)" :x2="x(hover)" :y1="PAD.t" :y2="H - PAD.b" stroke="rgb(255 255 255 / 0.35)" />
+        <circle :cx="x(hover)" :cy="y(hp.cumulative)" r="4.5" fill="#fff" stroke="#050505" stroke-width="2" />
       </g>
     </svg>
-    <div v-if="hp && hover != null" class="pointer-events-none absolute top-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] shadow-lg"
+    <div v-if="hp && hover != null" class="pointer-events-none absolute top-0 glass-pop rounded-[var(--radius-sm)] px-2.5 py-1.5 text-[11px]"
       :style="{ left: `${Math.min(width - 130, Math.max(0, x(hover) - 60))}px` }" role="status">
-      <div class="font-semibold text-slate-900 tabular-nums">{{ hp.cumulative }} total</div>
-      <div class="text-slate-500">+{{ hp.count }} · {{ hp.label }}</div>
+      <div class="font-semibold text-ink tabular-nums">{{ hp.cumulative }} total</div>
+      <div class="text-silver">+{{ hp.count }} · {{ hp.label }}</div>
     </div>
     <table class="sr-only">
       <caption>Businesses discovered over time</caption>
@@ -70,3 +70,8 @@ const hp = computed(() => (hover.value != null ? props.points[hover.value] : nul
     </table>
   </div>
 </template>
+
+<style scoped>
+.line-glow { filter: drop-shadow(0 0 4px rgb(255 255 255 / 0.5)); }
+.dot-glow { filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.9)); }
+</style>

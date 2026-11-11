@@ -16,11 +16,12 @@ const ATTRIBUTION = '<a href="https://openfreemap.org" target="_blank" rel="noop
   + '<a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">&copy; OpenMapTiles</a> '
   + 'Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
 
-export const MAP_BG = '#0d0f17'
+export const MAP_BG = '#070708'
 const C = {
-  land: MAP_BG, landuse: '#11141d', park: '#111a19', water: '#141c2e', waterLine: '#1b2540', building: '#161a26',
-  minor: '#1d2130', major: '#2a2f45', motorway: '#3a3358', rail: '#1f2233', boundary: '#4b4370', label: '#9aa0b8',
-  labelStrong: '#d6d8e6', halo: '#0b0d14',
+  // Monochrome charcoal: water darkest, roads as faint silver lines, labels silver/white.
+  land: MAP_BG, landuse: '#0d0d0f', park: '#0e0f0f', water: '#030304', waterLine: '#101012', building: '#141416',
+  minor: '#1a1a1d', major: '#26262a', motorway: '#36363b', rail: '#1c1c1f', boundary: '#4a4a50', label: '#8b8b93',
+  labelStrong: '#e4e4e7', halo: '#050505',
 }
 const FONT = ['Noto Sans Regular']
 const name: ExpressionSpecification = ['coalesce', ['get', 'name:latin'], ['get', 'name']]
@@ -76,13 +77,13 @@ export function mapStyle(): StyleSpecification | string {
       },
       {
         id: 'water-label', type: 'symbol', source: 'omt', 'source-layer': 'water_name',
-        layout: { 'text-field': name, 'text-font': FONT, 'text-size': 11 }, paint: { 'text-color': '#56628a', 'text-halo-color': C.halo, 'text-halo-width': 1 },
+        layout: { 'text-field': name, 'text-font': FONT, 'text-size': 11 }, paint: { 'text-color': '#55555c', 'text-halo-color': C.halo, 'text-halo-width': 1 },
       },
       {
         id: 'place-neighbourhood', type: 'symbol', source: 'omt', 'source-layer': 'place', minzoom: 12,
         filter: ['in', ['get', 'class'], ['literal', ['suburb', 'quarter', 'neighbourhood']]],
         layout: { 'text-field': name, 'text-font': FONT, 'text-size': 11, 'text-transform': 'uppercase', 'text-letter-spacing': 0.08 },
-        paint: { 'text-color': '#7c7f99', 'text-halo-color': C.halo, 'text-halo-width': 1.2 },
+        paint: { 'text-color': '#6b6b73', 'text-halo-color': C.halo, 'text-halo-width': 1.2 },
       },
       {
         id: 'place-town', type: 'symbol', source: 'omt', 'source-layer': 'place', minzoom: 7,
@@ -100,7 +101,7 @@ export function mapStyle(): StyleSpecification | string {
         id: 'place-country', type: 'symbol', source: 'omt', 'source-layer': 'place', maxzoom: 7,
         filter: ['==', ['get', 'class'], 'country'],
         layout: { 'text-field': name, 'text-font': FONT, 'text-size': 13, 'text-transform': 'uppercase', 'text-letter-spacing': 0.12 },
-        paint: { 'text-color': '#8b86b0', 'text-halo-color': C.halo, 'text-halo-width': 1.5 },
+        paint: { 'text-color': '#7a7a82', 'text-halo-color': C.halo, 'text-halo-width': 1.5 },
       },
     ],
   }

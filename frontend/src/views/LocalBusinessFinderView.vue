@@ -65,12 +65,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-dvh bg-[#f5f4fa] text-slate-800">
+  <div class="min-h-dvh text-soft">
     <FinderTopNav />
-    <div v-if="store.demo" class="bg-amber-400 px-4 py-1 text-center text-xs font-semibold text-amber-950" role="status">
+    <div v-if="store.demo" class="border-b border-warn/30 bg-warn/10 px-4 py-1 text-center text-xs font-semibold text-warn" role="status">
       DEMO DATA — development mock feed, not real research. Actions are disabled. Remove <code>?demo=1</code> for live data.
     </div>
-    <div v-if="!auth.current" class="m-6 rounded-2xl border border-slate-200 bg-white p-6 text-sm">No workspace. Ask an admin for access.</div>
+    <div v-if="!auth.current" class="card m-6 text-sm">No workspace. Ask an admin for access.</div>
     <!-- Grid areas: phone map → list → status → charts; tablet list | map+charts, status below; desktop 3 columns. -->
     <main v-else class="lbf-grid grid gap-3 p-3" :class="{ 'lbf-grid-demo': store.demo }">
       <BusinessSidebar class="h-[520px] [grid-area:list] md:h-0 md:min-h-full" />

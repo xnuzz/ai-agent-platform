@@ -31,27 +31,27 @@ const doErase = () => run(async () => {
 <template>
   <section class="max-w-2xl space-y-4">
     <ErrorBanner :message="error" />
-    <p v-if="!auth.isAdmin()" class="card text-sm text-slate-500">Only workspace admins can handle data-subject requests.</p>
+    <p v-if="!auth.isAdmin()" class="card text-sm text-silver">Only workspace admins can handle data-subject requests.</p>
     <template v-else>
       <form class="card space-y-3" @submit.prevent="doExport">
         <h3 class="font-semibold">Access request (export)</h3>
-        <p class="text-sm text-slate-600">Downloads every lead, outreach message, business record and suppression entry in this workspace that contains the address.</p>
+        <p class="text-sm text-silver">Downloads every lead, outreach message, business record and suppression entry in this workspace that contains the address.</p>
         <div class="flex gap-3"><input v-model="exportEmail" type="email" required class="input" placeholder="person@company.com" />
           <button class="btn-primary whitespace-nowrap" :disabled="busy">Export JSON</button></div>
       </form>
-      <form class="card space-y-3 border-rose-200" @submit.prevent="doErase">
-        <h3 class="font-semibold text-rose-800">Erasure request</h3>
-        <p class="text-sm text-slate-600">Anonymizes lead contact data, redacts messages, clears the address from businesses and cancels pending outreach.
+      <form class="card space-y-3 border-bad/30" @submit.prevent="doErase">
+        <h3 class="font-semibold text-bad">Erasure request</h3>
+        <p class="text-sm text-silver">Anonymizes lead contact data, redacts messages, clears the address from businesses and cancels pending outreach.
           The address is kept <strong>only</strong> on the suppression list so it is never contacted again. This cannot be undone.</p>
         <input v-model="eraseEmail" type="email" required class="input" placeholder="person@company.com" />
         <input v-model="eraseConfirm" type="email" required class="input" placeholder="Type the address again to confirm" />
         <div class="flex items-center gap-3">
           <button class="btn-danger" :disabled="busy || !eraseEmail || eraseEmail.toLowerCase() !== eraseConfirm.toLowerCase()">Erase personal data</button>
-          <span v-if="result" class="text-sm text-slate-600">{{ result.leads_anonymized }} lead(s), {{ result.messages_redacted }} message(s), {{ result.businesses_updated }} business(es) updated.</span>
+          <span v-if="result" class="text-sm text-silver">{{ result.leads_anonymized }} lead(s), {{ result.messages_redacted }} message(s), {{ result.businesses_updated }} business(es) updated.</span>
         </div>
       </form>
       <Notice :notice="notice" />
-      <p class="text-xs text-slate-500">Both actions are recorded in the audit log by a pseudonymous reference, never the address itself.</p>
+      <p class="text-xs text-silver">Both actions are recorded in the audit log by a pseudonymous reference, never the address itself.</p>
     </template>
   </section>
 </template>

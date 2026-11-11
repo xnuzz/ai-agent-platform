@@ -1,6 +1,6 @@
 # Integration Status
 
-**Last updated:** 2026-11-09 · Agent 2 dashboard UI session (frontend) · Contract version: API v1 / Result Bundle 1.0 (unchanged)
+**Last updated:** 2026-11-09 · Frontend redesign session · Contract version: API v1 / Result Bundle 1.0 (unchanged)
 Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not implemented · ⛔ Blocked
 
 ## Main platform (Team 3)
@@ -43,6 +43,7 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Finder: pause / resume research | ⛔ | No backend/SDK/agent support — buttons shown disabled with a note; requested below |
 | Finder: follow-up message | ⬜ | v1 is step 1 only (ADR-008); shown as "not available" |
 | Finder basemap tiles (OpenFreeMap) | 🟡 | Style written against the OpenMapTiles schema but **never rendered with real tiles here** (tile host blocked in the dev container); without tiles the map shows a dark background, markers stay correct and a notice is shown. Verify visually on a networked machine |
+| **Vue: monochrome "deep space" glass redesign (all pages)** — design tokens + component classes (ADR-017), star-field background, floating glass sidebar (collapsible on desktop, drawer on mobile), page/overlay transitions, redesigned dashboard (5 KPI tiles, agent activity, task donut, pipeline + source charts), segmented controls (agent picker, approval status, settings), approval "control room" (status + type lanes), Agent 1 opportunity map (interactive nodes: pain × score), monochrome Local Business Finder (map style, markers, charts, popups, drawers) | ✅ | Visual/UX only — no API, store or business-logic changes. Playwright 14/14; screenshots checked at 1440, 1920, tablet, phone; reduced-motion respected |
 | Finder demo feed (`?demo=1`) | 🧪 | Development builds only (excluded from production bundles); fictional Sofia businesses, "DEMO DATA" banner, actions disabled |
 | Deployment manifests (`infrastructure/deployment/`) | ⬜ | |
 
@@ -110,11 +111,13 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | 2026-11-09 | SDK: new `InvalidInputError` → fail code `invalid_input` (additive) | No | Team 1, Team 2 |
 | 2026-11-09 | Auth: login no longer returns `refresh` (httpOnly cookie instead); new logout/password endpoints (ADR-014) | **Yes** (frontend only; agents unaffected) | Team 3 |
 | 2026-11-09 | New: `privacy/export`, `privacy/erase`, `webhooks/email-events`, `Workspace.data_retention_days` | No | Team 3 |
+| 2026-11-09 | Frontend visual redesign (ADR-017): tokens + glass components, new dependency `@fontsource-variable/inter`. No API/schema change | No | Team 3 (frontend conventions) |
 | 2026-11-09 | Frontend: new route `/local-finder` (Agent 2 dashboard) using existing endpoints only; documented the scan-fact keys and fields the dashboard reads (`AGENT_2_CONTRACT.md` › dashboard). No API/schema change, OpenAPI unchanged | No | Team 2 (keep fact keys stable), Team 3 |
 | 2026-11-09 | Team 2: new Agent 2 problem codes `WEBSITE_UNREACHABLE`, `NO_HTTPS_REDIRECT`, `SSL_INVALID_CERTIFICATE`, `SSL_EXPIRING_SOON`, `MIXED_CONTENT` (`AGENT_2_CONTRACT.md`). Additive; backend accepts any `UPPER_SNAKE` code, frontend shows codes verbatim | No | Frontend (display only) |
 
 ## Known issues / risks
 - Local Business Finder: tile rendering unverified (see above); MapLibre adds ~300 kB gzip, loaded only on `/local-finder` (own chunk); its worker is served as `assets/maplibre-gl-worker-*.mjs` — the static server must send a JavaScript MIME type for `.mjs`.
+- Redesign: `backdrop-filter` on many glass cards can cost GPU time on low-end devices; the star field is static (no animation loop) to keep re-blurs rare. Basemap tiles are still unverified here (host blocked).
 - Local Business Finder loads at most 1,000 Agent 2 leads (10 pages); a notice is shown when truncated.
 - A message can remain `SENDING` if the worker dies mid-SMTP call (by design: at-most-once). No UI to resolve yet.
 - `LeadSerializer.is_suppressed` costs one query per lead (OK at page_size ≤100).

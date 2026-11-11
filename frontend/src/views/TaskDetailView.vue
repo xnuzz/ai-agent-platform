@@ -31,21 +31,21 @@ async function act(action: 'cancel' | 'retry') {
     <ErrorBanner :message="error" />
     <div class="grid gap-4 lg:grid-cols-3">
       <section class="card lg:col-span-2">
-        <div class="mb-3 flex items-center gap-3"><StatusBadge :status="task.status" /><span v-if="task.cancel_requested" class="text-xs text-rose-600">cancel requested</span></div>
+        <div class="mb-3 flex items-center gap-3"><StatusBadge :status="task.status" /><span v-if="task.cancel_requested" class="text-xs text-bad">cancel requested</span></div>
         <ProgressBar :value="task.progress ?? 0" />
-        <p class="mt-2 text-sm text-slate-600">{{ task.stage }} {{ task.progress_message }}</p>
-        <div v-if="task.error && Object.keys(task.error).length" class="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">
+        <p class="mt-2 text-sm text-silver">{{ task.stage }} {{ task.progress_message }}</p>
+        <div v-if="task.error && Object.keys(task.error).length" class="mt-4 rounded-lg bg-bad/10 p-3 text-sm text-bad">
           {{ (task.error as any).code }}: {{ (task.error as any).message }}
         </div>
         <h3 class="mt-6 mb-2 text-sm font-medium">Input</h3>
-        <pre class="overflow-x-auto rounded-lg bg-slate-50 p-3 text-xs">{{ JSON.stringify(task.input, null, 2) }}</pre>
+        <pre class="overflow-x-auto rounded-lg bg-white/[0.03] p-3 text-xs">{{ JSON.stringify(task.input, null, 2) }}</pre>
       </section>
       <section class="card">
         <h3 class="mb-3 text-sm font-medium">Results</h3>
         <dl class="space-y-1 text-sm">
-          <div v-for="(n, k) in task.result_counts" :key="k" class="flex justify-between"><dt class="text-slate-500">{{ String(k).replace('_', ' ') }}</dt><dd class="tabular-nums">{{ n }}</dd></div>
+          <div v-for="(n, k) in task.result_counts" :key="k" class="flex justify-between"><dt class="text-silver">{{ String(k).replace('_', ' ') }}</dt><dd class="tabular-nums">{{ n }}</dd></div>
         </dl>
-        <div class="mt-4 text-xs text-slate-500">Attempt {{ task.attempt }} / {{ task.max_attempts }} · heartbeat {{ fmtDate(task.heartbeat_at) }}</div>
+        <div class="mt-4 text-xs text-silver">Attempt {{ task.attempt }} / {{ task.max_attempts }} · heartbeat {{ fmtDate(task.heartbeat_at) }}</div>
         <RouterLink to="/approvals" class="btn-secondary mt-4">Open approval center</RouterLink>
       </section>
     </div>

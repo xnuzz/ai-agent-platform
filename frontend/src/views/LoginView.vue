@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, errorText } from '@/api/client'
+import BrandMark from '@/components/BrandMark.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -35,11 +36,16 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center px-4">
-    <form class="card w-full max-w-sm space-y-4" @submit.prevent="submit">
-      <h1 class="text-xl font-semibold">{{ { login: 'Sign in', register: 'Create account', forgot: 'Reset password' }[mode] }}</h1>
+  <div class="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
+    <div class="fade-in mb-8 flex flex-col items-center text-center">
+      <BrandMark :size="52" />
+      <h1 class="mt-5 text-[28px] font-semibold tracking-tight">Agent Platform</h1>
+      <p class="mt-1.5 text-sm text-silver">Autonomous research agents. Human approval on every step.</p>
+    </div>
+    <form class="glass-pop fade-in w-full max-w-sm space-y-4 rounded-[var(--radius-lg)] p-6" style="animation-delay: 80ms" @submit.prevent="submit">
+      <h2 class="text-lg font-semibold">{{ { login: 'Sign in', register: 'Create account', forgot: 'Reset password' }[mode] }}</h2>
       <ErrorBanner :message="error" />
-      <p v-if="mode === 'forgot' && resetSent" class="text-sm">If an account exists for {{ form.email }}, a reset link is on its way. It expires in one hour.</p>
+      <p v-if="mode === 'forgot' && resetSent" class="text-sm text-soft">If an account exists for {{ form.email }}, a reset link is on its way. It expires in one hour.</p>
       <template v-else>
         <div><label class="label">Email</label><input v-model="form.email" type="email" required class="input" autocomplete="email" /></div>
         <div v-if="mode !== 'forgot'"><label class="label">Password</label><input v-model="form.password" type="password" required class="input" :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" /></div>
@@ -47,13 +53,13 @@ async function submit() {
           <div><label class="label">Full name</label><input v-model="form.full_name" class="input" /></div>
           <div><label class="label">Workspace name</label><input v-model="form.workspace_name" required class="input" /></div>
         </template>
-        <button class="btn-primary w-full justify-center" :disabled="busy">{{ { login: 'Sign in', register: 'Create account', forgot: 'Send reset link' }[mode] }}</button>
+        <button class="btn-primary w-full justify-center py-2" :disabled="busy">{{ { login: 'Sign in', register: 'Create account', forgot: 'Send reset link' }[mode] }}</button>
       </template>
-      <div class="flex justify-between text-sm">
-        <button type="button" class="text-indigo-600" @click="mode = mode === 'login' ? 'register' : 'login'; resetSent = false">
+      <div class="flex justify-between gap-3 border-t border-line pt-4 text-sm">
+        <button type="button" class="text-ink hover:underline underline-offset-4" @click="mode = mode === 'login' ? 'register' : 'login'; resetSent = false">
           {{ mode === 'login' ? 'Need an account? Register' : 'Back to sign in' }}
         </button>
-        <button v-if="mode === 'login'" type="button" class="text-slate-500" @click="mode = 'forgot'">Forgot password?</button>
+        <button v-if="mode === 'login'" type="button" class="text-silver hover:text-ink" @click="mode = 'forgot'">Forgot password?</button>
       </div>
     </form>
   </div>
