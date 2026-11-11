@@ -93,7 +93,7 @@ async function logout() { await auth.logout(true); router.push({ name: 'login' }
       <div class="mx-auto max-w-[1400px]">
         <div v-if="!auth.current" class="card">No workspace. Ask an admin for access.</div>
         <RouterView v-else v-slot="{ Component, route: r }">
-          <Transition name="page" mode="out-in"><component :is="Component" :key="`${auth.current.id}:${r.fullPath}`" /></Transition>
+          <Transition name="page" mode="out-in"><div :key="`${auth.current.id}:${r.fullPath}`"><component :is="Component" /></div></Transition>
         </RouterView>
       </div>
     </main>
