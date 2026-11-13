@@ -164,5 +164,6 @@ class OSMProvider(DiscoveryProvider):
             country_code=(tags.get("addr:country") or inp.location.country_code).upper()[:2],
             latitude=el.get("lat", center.get("lat")), longitude=el.get("lon", center.get("lon")),
             listing_url=f"https://www.openstreetmap.org/{pid}", listing_title=f"OpenStreetMap: {name}",
-            source_data={"osm_id": pid, "provider": "osm"}, attribution=ATTRIBUTION,
+            source_data={"osm_id": pid, "provider": "osm", "opening_hours": bool(tags.get("opening_hours"))},
+            attribution=ATTRIBUTION,
         )

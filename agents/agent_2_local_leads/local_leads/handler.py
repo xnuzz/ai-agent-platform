@@ -21,6 +21,7 @@ from . import bulgaria
 from .analyzer import ScanResult, WebsiteAnalyzer
 from .analyzer.sitefinder import find_website
 from .briefs import Estimate, build_estimate
+from .commercial import CommercialAssessment, assess
 from .bundle import BatchBundle, Refs, clean_email, clean_url
 from .config import Settings
 from .contacts import ContactChoice, choose_contact
@@ -70,6 +71,7 @@ class LeadWork:
     assessment: Assessment | None = None
     suppressed: bool = False
     estimate: Estimate | None = None
+    commercial: CommercialAssessment | None = None   # shadow ranking (commercial.py), not yet used for status
     brief: Written | None = None
     outreach: Written | None = None
 
@@ -198,6 +200,7 @@ class LocalLeadsAgent:
             except Exception:  # a failed lookup just keeps the listing as-is
                 logger.exception("website lookup failed for %s", b.name)
                 return
+            b.source_data["website_search"] = "found" if url else "not_found"
             if url:
                 if b.website:  # keep the social page it replaced
                     b.source_data["social_page"] = b.website
@@ -261,8 +264,27 @@ class LocalLeadsAgent:
             note = f"Website not analysed ({scan.skipped_reason})."
         assessment = score_lead(findings, contact, min_score=inp.min_score, scan_note=note,
                                 has_phone=bool(b.phone.strip()))
+        estimate = self._estimate(b, findings, scan, inp)
+        scanned = bool(scan and scan.scanned)
+        bg = scan.facts.get("bulgaria") if scanned else None  # BG codes found on the site, or ["not checked: …"]
+        company_info = (isinstance(bg, list) and "MISSING_COMPANY_INFO" not in bg
+                        and not any(str(x).startswith("not checked") for x in bg))
+        commercial = assess(b, findings, contact, estimate, scanned=scanned,
+                            cost_hourly_rate=self.settings.cost_hourly_rate,
+                            website_searched=b.source_data.get("website_search") == "not_found",
+                            company_info_found=company_info)
+        b.source_data["commercial_v1"] = commercial.as_dict()
+        assessment.notes += " " + commercial.summary()
         return LeadWork(business=b, refs=Refs(b), scan=scan, findings=findings, contact=contact,
-                        assessment=assessment)
+                        assessment=assessment, estimate=estimate, commercial=commercial)
+
+    def _estimate(self, b: DiscoveredBusiness, findings: list[Finding], scan: ScanResult | None,
+                  inp: TaskInput) -> Estimate:
+        cms = (scan.facts.get("cms", "") if scan else "") or ""
+        m = market_for(b.country_code or inp.location.country_code)
+        rate = self.settings.hourly_rate or m.hourly_rate
+        currency = self.settings.currency or ("EUR" if self.settings.hourly_rate else m.currency)
+        return build_estimate(findings, hourly_rate=rate, currency=currency, cms=cms)
 
     @staticmethod
     def _mark_suppressed(ctx, qualified: list[LeadWork]) -> None:
@@ -312,11 +334,7 @@ class LocalLeadsAgent:
         if not qualified:
             return
         for w in qualified:
-            cms = (w.scan.facts.get("cms", "") if w.scan else "") or ""
-            m = market_for(w.business.country_code or inp.location.country_code)
-            rate = self.settings.hourly_rate or m.hourly_rate
-            currency = self.settings.currency or ("EUR" if self.settings.hourly_rate else m.currency)
-            w.estimate = build_estimate(w.findings, hourly_rate=rate, currency=currency, cms=cms)
+            w.estimate = w.estimate or self._estimate(w.business, w.findings, w.scan, inp)
         with ThreadPoolExecutor(max_workers=4, thread_name_prefix="write") as pool:
             jobs = []
             for w in qualified:

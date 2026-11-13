@@ -75,6 +75,7 @@ class Settings:
     batch_size: int = 10
     hourly_rate: float = 0.0                      # 0 -> local market rate of the business's country (market.py)
     currency: str = ""                            # "" -> market currency (or EUR when hourly_rate is overridden)
+    cost_hourly_rate: float = 0.0                 # our delivery cost/h for profit estimates; 0 -> profit not estimated
     crawler: CrawlerSettings = field(default_factory=CrawlerSettings)
 
     @classmethod
@@ -102,6 +103,7 @@ class Settings:
             batch_size=max(1, _int("BATCH_SIZE", 10, e)),
             hourly_rate=_float("BRIEF_HOURLY_RATE", 0.0, e),
             currency=_env("BRIEF_CURRENCY", "", e).upper(),
+            cost_hourly_rate=_float("COST_HOURLY_RATE", 0.0, e),
             crawler=CrawlerSettings(
                 info_url=_env("CRAWLER_INFO_URL", DEFAULT_CRAWLER_INFO_URL, e),
                 connect_timeout=_float("CRAWLER_CONNECT_TIMEOUT", 5.0, e),
