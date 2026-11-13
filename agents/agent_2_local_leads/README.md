@@ -106,6 +106,9 @@ Compose service — **not** added to Team 3's `docker-compose.yml` (requested in
 | `CRAWLER_MAX_PAGE_BYTES` | `1500000` | bounded download per page |
 | `CRAWLER_MAX_LINK_CHECKS` | `8` | broken-link sample (same-site links only) |
 | `CRAWLER_CONCURRENCY` | `8` | sites scanned in parallel (different hosts) |
+| `SCAN_CACHE_HOURS` | `24` | reuse a successful website scan for this long within one worker process (re-runs, retries); `0` disables |
+| `LLM_MAX_CALLS_PER_TASK` | `100` | LLM request budget per task; further texts use the templates (noted in the approval summary). Identical requests are served from an in-process cache. Task summary reports `llm_usage` (calls, cache hits, fallbacks, input/output tokens) |
+| `COST_HOURLY_RATE` | unset | your delivery cost per hour; enables dev-cost and profit ranges in the shadow commercial score. Unset → profit is not estimated |
 | `CRAWLER_SLOW_PAGE_SECONDS`, `CRAWLER_SSL_EXPIRY_WARNING_DAYS` | `3.0`, `14` | thresholds |
 | `CRAWLER_CA_BUNDLE`, `CRAWLER_TRUST_ENV` | system CAs, `true` | TLS trust store / honour proxy env vars |
 

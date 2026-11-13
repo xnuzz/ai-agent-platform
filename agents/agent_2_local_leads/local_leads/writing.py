@@ -6,12 +6,16 @@ Every result records who wrote it (`author`) so the reviewer can see it in the a
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
+import threading
+from collections import OrderedDict
 from dataclasses import dataclass
 
 from .llm import LLMError, LLMProvider, validate
+from .llm.base import LLMUnavailable
 from .llm.fake import FACTS_MARKER
 from .llm.templates import brief_text, outreach_language, outreach_text
 
@@ -80,15 +84,58 @@ def _prompt(intro: str, facts: dict) -> str:
 
 
 class Writer:
-    def __init__(self, llm: LLMProvider | None):
+    """LLM text with template fallback. Identical requests are answered from a bounded in-process cache (task
+    retries re-send the same facts), and each task may spend at most `max_calls` LLM requests; beyond that the
+    templates are used and the note says so."""
+
+    CACHE_SIZE = 512
+
+    def __init__(self, llm: LLMProvider | None, *, max_calls: int = 100):
         self.llm = llm
+        self.max_calls = max_calls
+        self._lock = threading.Lock()
+        self._cache: OrderedDict[str, dict] = OrderedDict()
+        self.start_task()
+
+    def start_task(self) -> None:
+        with self._lock:
+            self.stats = {"llm_calls": 0, "cache_hits": 0, "template_fallbacks": 0, "budget_exhausted": 0}
+        self._usage_start = self._usage()
+
+    def _usage(self) -> dict:
+        snap = getattr(self.llm, "usage_snapshot", None)
+        return snap() if snap else {}
+
+    def task_stats(self) -> dict:
+        now = self._usage()
+        tokens = {k: now[k] - self._usage_start.get(k, 0) for k in now}
+        with self._lock:
+            return {**self.stats, **tokens}
+
+    def _call(self, task: str, system: str, prompt: str, schema: dict) -> dict:
+        key = hashlib.sha256(f"{task}\0{system}\0{prompt}".encode()).hexdigest()
+        with self._lock:
+            if key in self._cache:
+                self._cache.move_to_end(key)
+                self.stats["cache_hits"] += 1
+                return json.loads(json.dumps(self._cache[key]))  # a copy: callers mutate the result
+            if self.stats["llm_calls"] >= self.max_calls:
+                self.stats["budget_exhausted"] += 1
+                raise LLMUnavailable(f"LLM call budget for this task reached ({self.max_calls})")
+            self.stats["llm_calls"] += 1
+        data = self.llm.generate_json(task=task, system=system, prompt=prompt, schema=schema)
+        with self._lock:
+            self._cache[key] = json.loads(json.dumps(data))
+            while len(self._cache) > self.CACHE_SIZE:
+                self._cache.popitem(last=False)
+        return data
 
     def _generate(self, task: str, system: str, intro: str, schema: dict, facts: dict, template, check=None,
                   template_lang=lambda lang: "en") -> Written:
         note = "no LLM configured"
         if self.llm is not None:
             try:
-                data = self.llm.generate_json(task=task, system=system, prompt=_prompt(intro, facts), schema=schema)
+                data = self._call(task, system, _prompt(intro, facts), schema)
                 if check:
                     data = check(data)
                 errors = validate(data, schema)
@@ -99,6 +146,8 @@ class Writer:
             except LLMError as exc:
                 note = f"LLM unavailable: {exc}"
             logger.warning("%s: falling back to template (%s)", task, note)
+            with self._lock:
+                self.stats["template_fallbacks"] += 1
         lang = facts.get("language", "en")
         used = template_lang(lang)
         if used != lang.split("-")[0].lower():

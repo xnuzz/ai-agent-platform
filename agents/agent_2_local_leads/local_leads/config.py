@@ -76,6 +76,8 @@ class Settings:
     hourly_rate: float = 0.0                      # 0 -> local market rate of the business's country (market.py)
     currency: str = ""                            # "" -> market currency (or EUR when hourly_rate is overridden)
     cost_hourly_rate: float = 0.0                 # our delivery cost/h for profit estimates; 0 -> profit not estimated
+    llm_max_calls_per_task: int = 100             # LLM request budget per task; beyond it templates are used
+    scan_cache_hours: float = 24.0                # reuse a website scan this long (same worker); 0 disables
     crawler: CrawlerSettings = field(default_factory=CrawlerSettings)
 
     @classmethod
@@ -104,6 +106,8 @@ class Settings:
             hourly_rate=_float("BRIEF_HOURLY_RATE", 0.0, e),
             currency=_env("BRIEF_CURRENCY", "", e).upper(),
             cost_hourly_rate=_float("COST_HOURLY_RATE", 0.0, e),
+            llm_max_calls_per_task=max(0, _int("LLM_MAX_CALLS_PER_TASK", 100, e)),
+            scan_cache_hours=max(0.0, _float("SCAN_CACHE_HOURS", 24.0, e)),
             crawler=CrawlerSettings(
                 info_url=_env("CRAWLER_INFO_URL", DEFAULT_CRAWLER_INFO_URL, e),
                 connect_timeout=_float("CRAWLER_CONNECT_TIMEOUT", 5.0, e),

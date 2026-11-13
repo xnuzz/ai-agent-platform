@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 
 from ..config import DEFAULT_LLM_MODEL
 from .base import LLMError, LLMProvider, LLMRefusal, LLMUnavailable, wire_schema
@@ -33,6 +34,12 @@ class AnthropicProvider(LLMProvider):
         # api_key=None lets the SDK resolve ANTHROPIC_API_KEY / profiles; LLM_API_KEY takes precedence.
         self.client = client or anthropic.Anthropic(api_key=api_key or None, timeout=timeout,
                                                     max_retries=max_retries)
+        self._usage_lock = threading.Lock()
+        self.usage = {"input_tokens": 0, "output_tokens": 0}   # running totals reported by the API
+
+    def usage_snapshot(self) -> dict:
+        with self._usage_lock:
+            return dict(self.usage)
 
     def generate_json(self, *, task: str, system: str, prompt: str, schema: dict, max_tokens: int = 8000) -> dict:
         sdk = self._sdk
@@ -60,6 +67,11 @@ class AnthropicProvider(LLMProvider):
             raise LLMUnavailable(f"{task}: connection error: {exc}") from exc
 
         request_id = getattr(resp, "_request_id", None)
+        u = getattr(resp, "usage", None)
+        if u is not None:
+            with self._usage_lock:
+                for k in self.usage:
+                    self.usage[k] += int(getattr(u, k, 0) or 0)
         if resp.stop_reason == "refusal":
             details = getattr(resp, "stop_details", None)
             raise LLMRefusal(f"{task}: model declined (category={getattr(details, 'category', None)}, "

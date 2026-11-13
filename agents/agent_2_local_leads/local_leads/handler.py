@@ -8,8 +8,11 @@ DRAFTING_OUTREACH, SUBMITTING. The agent only *requests* approval; it never appr
 """
 from __future__ import annotations
 
+import copy
 import logging
-from collections import Counter
+import threading
+import time
+from collections import Counter, OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -34,6 +37,7 @@ from .scoring import Assessment, score_lead
 from .writing import Writer, Written
 
 logger = logging.getLogger("local_leads.handler")
+SCAN_CACHE_SIZE = 2000   # scans kept per worker process (oldest evicted)
 TASK_TYPE = "LOCAL_LEAD_DISCOVERY"
 OVERFETCH = 2       # discover 2x max_businesses, keep the best prospects
 FIRST_BATCH = 3
@@ -89,8 +93,12 @@ class LocalLeadsAgent:
         self.settings = settings
         self.discovery = discovery or build_discovery(settings)
         self.llm = build_llm(settings) if llm == "auto" else llm
-        self.writer = Writer(self.llm)
+        self.writer = Writer(self.llm, max_calls=settings.llm_max_calls_per_task)
         self.analyzer = analyzer or WebsiteAnalyzer(settings.crawler)
+        # Scans reused across tasks of this worker (re-runs of a city, task retries): no repeated crawling.
+        self._scan_cache: OrderedDict[tuple, tuple[float, ScanResult]] = OrderedDict()
+        self._scan_lock = threading.Lock()
+        self.scan_cache_hits = 0
 
     def close(self) -> None:
         self.analyzer.close()
@@ -99,6 +107,8 @@ class LocalLeadsAgent:
     # ================================================================== entry point
     def __call__(self, ctx: TaskContext) -> dict:
         inp = TaskInput.parse(ctx.input)
+        self.writer.start_task()
+        cache_hits_before = self.scan_cache_hits
         unknown_checks = sorted(set(inp.checks) - ALL_CODES)
         wanted = (set(inp.checks) & ALL_CODES) or set(ALL_CODES)
         if inp.checks and not set(inp.checks) & ALL_CODES:
@@ -134,6 +144,7 @@ class LocalLeadsAgent:
             "checks": sorted(wanted) if inp.checks else "ALL", "unknown_checks": unknown_checks,
             "discovery_provider": self.discovery.name,
             "llm_provider": self.llm.describe() if self.llm else "template",
+            "llm_usage": self.writer.task_stats(), "scan_cache_hits": self.scan_cache_hits - cache_hits_before,
         }
 
     @staticmethod
@@ -216,14 +227,28 @@ class LocalLeadsAgent:
         if not targets:
             return {}
 
+        ttl = self.settings.scan_cache_hours * 3600
+
         def scan(b: DiscoveredBusiness) -> ScanResult:
+            key = (clean_url(b.website), b.category, frozenset(wanted), b.country_code)
+            with self._scan_lock:
+                hit = self._scan_cache.get(key)
+                if hit and time.monotonic() - hit[0] < ttl:
+                    self.scan_cache_hits += 1
+                    return copy.deepcopy(hit[1])  # retrieved_at keeps the original scan time
             try:
-                return self.analyzer.analyze(clean_url(b.website), category=b.category, wanted=wanted,
-                                             country=b.country_code)
+                res = self.analyzer.analyze(clean_url(b.website), category=b.category, wanted=wanted,
+                                            country=b.country_code)
             except Exception as exc:  # noqa: BLE001 - one broken site must not fail the task
                 logger.exception("scan failed for %s", b.website)
                 return ScanResult(url=b.website, skipped_reason=f"scanner error: {type(exc).__name__}",
                                   retrieved_at=datetime.now(timezone.utc).isoformat())
+            if ttl and res.scanned:  # failures are retried next time, never cached
+                with self._scan_lock:
+                    self._scan_cache[key] = (time.monotonic(), copy.deepcopy(res))
+                    while len(self._scan_cache) > SCAN_CACHE_SIZE:
+                        self._scan_cache.popitem(last=False)
+            return res
 
         with ThreadPoolExecutor(max_workers=self.settings.crawler.concurrency,
                                 thread_name_prefix="scan") as pool:
