@@ -20,7 +20,13 @@ export async function login(page: Page, c: Creds) {
   await page.waitForURL('/')
 }
 
-export const nav = (page: Page, label: string) => page.locator('nav').getByText(label, { exact: true }).click()
+/** Click a sidebar link and wait for the route transition (mode out-in) to finish, so locators never match the
+ * outgoing page while it fades out. */
+export async function nav(page: Page, label: string) {
+  await page.locator('nav').getByText(label, { exact: true }).click()
+  await expect(page.locator('nav a[aria-current="page"]', { hasText: label })).toHaveCount(1) // route changed
+  await expect(page.locator('.page-leave-active, .page-enter-active')).toHaveCount(0)        // transition done
+}
 
 export async function requestChanges(page: Page, title: string, comment: string) {
   await nav(page, 'Approval center')

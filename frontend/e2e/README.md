@@ -9,3 +9,4 @@ export E2E_PYTHON=/path/to/venv/bin/python      # needs backend deps + platform_
 cd frontend && npm run e2e
 ```
 Ports: `E2E_API_PORT` (8000), `E2E_WEB_PORT` (5173). Runs in CI as the `e2e` job.
+No Chromium download possible? `E2E_BROWSER_CHANNEL=msedge` (or `chrome`) drives the installed browser. Use a separate database (e.g. `DATABASE_URL=.../platform_e2e`, migrated) so test accounts never land in your dev data.

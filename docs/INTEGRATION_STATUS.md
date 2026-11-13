@@ -19,7 +19,7 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Integrations (encrypted write-only secrets) | ✅ | Connection "verify" ⬜. SMTP host/port validated (no private hosts unless `SMTP_ALLOW_PRIVATE_HOSTS`) |
 | Audit log (append-only) | ✅ | |
 | Dashboard summary API | ✅ | |
-| **Operations dashboard** (`GET dashboard/operations/` + Vue `/operations`): per-agent state, current task, progress, queue, last heartbeat / success, worker last seen, stuck, failed + retries (24 h), recent errors, business/lead totals, alerts (stalled task, worker offline with queued work, failures, messages stuck in SENDING) | ✅ | Backend tested (4 tests incl. workspace isolation); UI type-checked + built; Playwright spec added, **not run locally** (no Chromium) |
+| **Operations dashboard** (`GET dashboard/operations/` + Vue `/operations`): per-agent state, current task, progress, queue, last heartbeat / success, worker last seen, stuck, failed + retries (24 h), recent errors, business/lead totals, alerts (stalled task, worker offline with queued work, failures, messages stuck in SENDING) | ✅ | Backend tested (5 tests incl. workspace isolation); Playwright `e2e/operations.spec.ts` passes (2026-11-13, Edge) |
 | Recovery: `POST outreach-messages/{id}/resolve-sending/` (ADMIN+, audited) + UI on `/operations` | ✅ | Human settles SENDING as SENT/FAILED; never resent automatically |
 | Agent 2 pilot tooling: `manage.py pilot_report export <task> out.csv` / `score labelled.csv` | ✅ | Tested; metrics only over human-labelled rows |
 | Alert delivery (e-mail/Slack/webhook) | ⬜ | Alerts are shown on the dashboard only |
@@ -145,8 +145,8 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 
 ## Next steps — Team 3 (in order)
 2026-11-13: full `pytest` 247 passed / 0 failed on Windows + Postgres; `npm run build` passes; Playwright + Docker not run this session.
-2026-11-13 (later): full `pytest` 260 passed / 0 failed; `npm run build` passes; Playwright + Docker still not run.
-0. Owner decisions: КЗП register handling (no public export found); counsel review of the BG subject marker (ADR-018); approve the Playwright Chromium download to run e2e locally. Run the BG pilot when Overpass answers (or with a Places key), label it with `pilot_report`, then decide whether the shadow commercial score replaces production ranking.
+2026-11-13 (later): full `pytest` 260 passed / 0 failed; `npm run build` passes; **Playwright 16/16 passed** locally (installed Edge via `E2E_BROWSER_CHANNEL=msedge`, isolated `platform_e2e` DB; Chromium CDN download timed out). Docker still not run.
+0. Owner decisions: КЗП register handling (no public export found); counsel review of the BG subject marker (ADR-018); Run the BG pilot when Overpass answers (or with a Places key), label it with `pilot_report`, then decide whether the shadow commercial score replaces production ranking.
 Done 2026-11-09: GitHub + PR #1 merged (green CI) · Team 1/2 merged, requests resolved · browser e2e suite in CI · GDPR export/erasure/retention · email-events webhook · httpOnly-cookie auth + password reset.
 1. ⛔ `docker compose up` end-to-end and fix Dockerfiles — needs a machine with Docker (none in the dev container).
 2. Choose an email provider (SES / Mailgun / Postmark) → write its adapter for `webhooks/email-events` and its SMTP/API sender.

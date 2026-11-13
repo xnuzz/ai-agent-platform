@@ -21,7 +21,8 @@ export default defineConfig({
     trace: 'off',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1400, height: 1000 } } }],
+  // E2E_BROWSER_CHANNEL=msedge|chrome drives an installed browser instead of the downloaded Chromium (offline machines).
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1400, height: 1000 }, channel: process.env.E2E_BROWSER_CHANNEL || undefined } }],
   webServer: [
     {
       command: `${PY} manage.py runserver 127.0.0.1:${API_PORT} --noreload`,
