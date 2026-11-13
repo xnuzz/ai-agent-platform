@@ -106,6 +106,10 @@ def test_full_run_conforms_and_qualifies(sites):
     assert by_name["Broken Listing"]["problems"] == []                      # invalid URL: not scanned
     assert biz[by_name["Broken Listing"]["business_ref"]]["website"] == ""
     assert biz[poor["business_ref"]]["latitude"] == 42.123457                # rounded to 6 dp
+    # shadow commercial score: attached for comparison, production score/status unchanged
+    shadow = biz[poor["business_ref"]]["source_data"]["commercial_v1"]
+    assert shadow["shadow"] is True and 0 <= shadow["score"] <= 100 and shadow["estimates"]["profit"] is None
+    assert "Shadow commercial score" in poor["qualification_notes"]
 
     briefs = {pb["lead_ref"]: pb for pb in merged(ctx.bundles, "project_briefs")}
     campaigns = {c["messages"][0]["lead_ref"]: c for c in merged(ctx.bundles, "campaigns")}
