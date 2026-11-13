@@ -20,6 +20,7 @@ export type Approval = S['Approval']
 export type ApprovalDecision = S['ApprovalDecisionEnum']
 export type SuppressionEntry = S['SuppressionEntry']
 export type AuditEvent = S['AuditEvent']
+export type OperationsReport = S['Operations']
 
 export interface DashboardSummary {
   research_tasks: Record<string, number>

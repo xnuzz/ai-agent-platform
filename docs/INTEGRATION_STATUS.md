@@ -1,6 +1,6 @@
 # Integration Status
 
-**Last updated:** 2026-11-13 · Team 3 stability/security session · Contract version: API v1 / Result Bundle 1.0 (unchanged)
+**Last updated:** 2026-11-13 · commercial intelligence + operations session · Contract version: API v1 / Result Bundle 1.0 (unchanged)
 Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not implemented · ⛔ Blocked
 
 ## Main platform (Team 3)
@@ -19,6 +19,10 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Integrations (encrypted write-only secrets) | ✅ | Connection "verify" ⬜. SMTP host/port validated (no private hosts unless `SMTP_ALLOW_PRIVATE_HOSTS`) |
 | Audit log (append-only) | ✅ | |
 | Dashboard summary API | ✅ | |
+| **Operations dashboard** (`GET dashboard/operations/` + Vue `/operations`): per-agent state, current task, progress, queue, last heartbeat / success, worker last seen, stuck, failed + retries (24 h), recent errors, business/lead totals, alerts (stalled task, worker offline with queued work, failures, messages stuck in SENDING) | ✅ | Backend tested (4 tests incl. workspace isolation); UI type-checked + built; Playwright spec added, **not run locally** (no Chromium) |
+| Recovery: `POST outreach-messages/{id}/resolve-sending/` (ADMIN+, audited) + UI on `/operations` | ✅ | Human settles SENDING as SENT/FAILED; never resent automatically |
+| Agent 2 pilot tooling: `manage.py pilot_report export <task> out.csv` / `score labelled.csv` | ✅ | Tested; metrics only over human-labelled rows |
+| Alert delivery (e-mail/Slack/webhook) | ⬜ | Alerts are shown on the dashboard only |
 | `/healthz` checks DB (503 on failure); 413 for bodies > `MAX_REQUEST_BYTES`; throttles ignore client X-Forwarded-For (`NUM_PROXIES`), shared Redis cache when not DEBUG | ✅ | 2026-11-13; Redis cache path not exercised here (tests use LocMem) |
 | OpenAPI schema + generated TS types | ✅ | `docs/openapi.yaml`, `frontend/src/api/schema.d.ts` |
 | `agents/platform_sdk` (client + worker + keepalive) | ✅ | Used by E2E tests |
@@ -88,7 +92,10 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | **Bulgaria market pack** (`bulgaria.py`): small-business filter, BG categories + 18 default niches, owner-run mobile ranking, `SOCIAL_MEDIA_ONLY` / `FREE_SUBDOMAIN` / `PRICES_IN_BGN` / `MISSING_COMPANY_INFO` / `NO_PRIVACY_POLICY`, ЗЕТ чл. 6 compliance (subject marker, без ДДС, КЗП note, free-mail → UNKNOWN), BG sales notes | 🟡 | Checks verified on live BG sites; live discovery run blocked by Overpass rate limit (re-run pending) |
 | Outreach in the business's local language (`language: auto` default; native en/bg/de templates), sales-playbook prompts + templates, per-country market pricing (`market.py`) | ✅ | Real run: Bulgarian drafts with EUR market prices. LLM path not run for real (no key). Backend default for `LOCAL_LEAD_DISCOVERY.language` is now `auto` |
 | Prospect ranking (2× over-fetch; reachable without website first), first batch of 3, OSM categories 2 in parallel, crawler concurrency 8 | ✅ | Real browser run: first leads on the map ~40 s after discovery finished |
-| Scoring: no e-mail **and** no phone → −30 (was −10), so unreachable NO_WEBSITE businesses are DISQUALIFIED (still submitted) | ✅ | |
+| Scoring: no e-mail **and** no phone → −30 (was −10), so unreachable NO_WEBSITE businesses are DISQUALIFIED (still submitted) | ✅ |
+| **Shadow commercial score** (`commercial.py`, `source_data.commercial_v1`): need × finding confidence, value, contactability, legitimacy, data confidence, closed-business gate; revenue vs dev cost vs profit kept apart (profit only with `COST_HOURLY_RATE`) | 🟡 | Runs on every lead, **does not drive status yet**. Eval set = 12 author-labelled synthetic cases (pairwise 0.98 vs production 0.88 — circular until real pilot labels exist) |
+| Cost controls: LLM response cache, per-task LLM call budget (`LLM_MAX_CALLS_PER_TASK`), token accounting in task summary (`llm_usage`), website-scan reuse across tasks (`SCAN_CACHE_HOURS`) | ✅ | Tested with fakes; token counts come from the API response (no price table — none invented). Caches are per worker process (lost on restart) |
+| Real Bulgarian pilot (Plovdiv, Nessebar) | ⛔ | 2026-11-13: overpass-api.de "at capacity" (502), mirrors time out; no Google Places key. Harness ready (`pilot_report`) | |
 | `fake` discovery + `fake` LLM providers | 🧪 | Mocks for tests/offline dev only (`discovery/fake.py`, `llm/fake.py`), log a warning when selected |
 | CLI `python -m local_leads` (`--once`, `--check-config`) | ✅ | Smoke-run as a real process against `runserver` (fake providers): task COMPLETED, 3 approvals pending |
 | Dockerfile (`agents/agent_2_local_leads/Dockerfile`) | 🟡 | Written; **not built** (no Docker daemon in this environment). Wheel build verified |
@@ -122,6 +129,7 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | 2026-11-09 | New: `privacy/export`, `privacy/erase`, `webhooks/email-events`, `Workspace.data_retention_days` | No | Team 3 |
 | 2026-11-09 | Frontend visual redesign (ADR-017): tokens + glass components, new dependency `@fontsource-variable/inter`. No API/schema change | No | Team 3 (frontend conventions) |
 | 2026-11-09 | Frontend: new route `/local-finder` (Agent 2 dashboard) using existing endpoints only; documented the scan-fact keys and fields the dashboard reads (`AGENT_2_CONTRACT.md` › dashboard). No API/schema change, OpenAPI unchanged | No | Team 2 (keep fact keys stable), Team 3 |
+| 2026-11-13 | New `GET dashboard/operations/`, `POST outreach-messages/{id}/resolve-sending/` (additive; OpenAPI + `schema.d.ts` regenerated). Agent 2: additive `source_data.commercial_v1` / `opening_hours` / `website_search` | No | Team 3, Team 2, frontend |
 | 2026-11-13 | Backend: new compliance reason `commercial_subject_marker_missing` (BG, ADR-018); new error `413 payload_too_large`; Agent 1 prefixes BG subjects. No schema change | No (agents already prefix) | Team 1, Team 2, frontend shows reasons verbatim |
 | 2026-11-09 | Team 2: new Agent 2 problem codes `WEBSITE_UNREACHABLE`, `NO_HTTPS_REDIRECT`, `SSL_INVALID_CERTIFICATE`, `SSL_EXPIRING_SOON`, `MIXED_CONTENT` (`AGENT_2_CONTRACT.md`). Additive; backend accepts any `UPPER_SNAKE` code, frontend shows codes verbatim | No | Frontend (display only) |
 
@@ -137,7 +145,8 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 
 ## Next steps — Team 3 (in order)
 2026-11-13: full `pytest` 247 passed / 0 failed on Windows + Postgres; `npm run build` passes; Playwright + Docker not run this session.
-0. Owner decisions: КЗП register handling (no public export found); counsel review of the BG subject marker (ADR-018). Commit the working tree on the team branches.
+2026-11-13 (later): full `pytest` 260 passed / 0 failed; `npm run build` passes; Playwright + Docker still not run.
+0. Owner decisions: КЗП register handling (no public export found); counsel review of the BG subject marker (ADR-018); approve the Playwright Chromium download to run e2e locally. Run the BG pilot when Overpass answers (or with a Places key), label it with `pilot_report`, then decide whether the shadow commercial score replaces production ranking.
 Done 2026-11-09: GitHub + PR #1 merged (green CI) · Team 1/2 merged, requests resolved · browser e2e suite in CI · GDPR export/erasure/retention · email-events webhook · httpOnly-cookie auth + password reset.
 1. ⛔ `docker compose up` end-to-end and fix Dockerfiles — needs a machine with Docker (none in the dev container).
 2. Choose an email provider (SES / Mailgun / Postmark) → write its adapter for `webhooks/email-events` and its SMTP/API sender.

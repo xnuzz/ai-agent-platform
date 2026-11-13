@@ -509,6 +509,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboard/operations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Agent health for this workspace, computed from tasks, leases, heartbeats and agent-token use. */
+        get: operations["v1_dashboard_operations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboard/summary/": {
         parameters: {
             query?: never;
@@ -854,6 +871,26 @@ export interface paths {
         put?: never;
         /** @description Exclude a message (allowed until it is sent). */
         post: operations["v1_outreach_messages_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outreach-messages/{id}/resolve-sending/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description ADMIN+: settle a message stuck in SENDING after checking the mail provider (SENT or FAILED).
+         *     Outreach is at-most-once, so the platform never decides or resends this itself.
+         */
+        post: operations["v1_outreach_messages_resolve_sending_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1253,6 +1290,29 @@ export interface components {
             /** @default  */
             country_code: string;
         };
+        AgentOps: {
+            agent: string;
+            state: components["schemas"]["StateEnum"];
+            /** Format: date-time */
+            worker_last_seen_at: string | null;
+            /** Format: date-time */
+            last_heartbeat_at: string | null;
+            /** Format: date-time */
+            last_success_at: string | null;
+            current_tasks: components["schemas"]["CurrentTask"][];
+            queued: number;
+            /** Format: date-time */
+            oldest_queued_at: string | null;
+            /** @description RUNNING tasks whose lease expired (the reaper requeues or fails them) */
+            stuck: number;
+            failed_24h: number;
+            /** @description Extra attempts on tasks updated in the last 24 h */
+            retries_24h: number;
+            recent_errors: components["schemas"]["TaskError"][];
+            businesses: number;
+            leads: number;
+            qualified_leads: number;
+        };
         AgentTask: {
             /** Format: uuid */
             readonly id: string;
@@ -1282,6 +1342,12 @@ export interface components {
          * @enum {string}
          */
         AgentTypeEnum: "SAAS_RESEARCH" | "LOCAL_LEADS";
+        Alert: {
+            level: components["schemas"]["LevelEnum"];
+            code: string;
+            message: string;
+            agent: string;
+        };
         Approval: {
             /** Format: uuid */
             readonly id: string;
@@ -1510,6 +1576,19 @@ export interface components {
             /** @default  */
             legal_basis_note: string;
         };
+        CurrentTask: {
+            /** Format: uuid */
+            id: string;
+            task_type: string;
+            stage: string;
+            progress: number;
+            progress_message: string;
+            attempt: number;
+            /** Format: date-time */
+            heartbeat_at: string | null;
+            /** Format: date-time */
+            lease_expires_at: string | null;
+        };
         DecisionRequest: {
             decision: components["schemas"]["ApprovalDecisionEnum"];
             /** @default  */
@@ -1736,6 +1815,12 @@ export interface components {
          * @enum {string}
          */
         LegalBasisEnum: "LEGITIMATE_INTEREST" | "CONSENT" | "UNKNOWN";
+        /**
+         * @description * `warning` - warning
+         *     * `critical` - critical
+         * @enum {string}
+         */
+        LevelEnum: "warning" | "critical";
         Membership: {
             /** Format: uuid */
             readonly id: string;
@@ -1783,6 +1868,13 @@ export interface components {
             /** @default  */
             call_to_action: string;
         };
+        Operations: {
+            /** Format: date-time */
+            generated_at: string;
+            agents: components["schemas"]["AgentOps"][];
+            messages_stuck_sending: number;
+            alerts: components["schemas"]["Alert"][];
+        };
         Opportunity: {
             /** Format: uuid */
             readonly id: string;
@@ -1829,6 +1921,12 @@ export interface components {
         OpportunityStatusRequest: {
             status: components["schemas"]["OpportunityStatusEnum"];
         };
+        /**
+         * @description * `SENT` - SENT
+         *     * `FAILED` - FAILED
+         * @enum {string}
+         */
+        OutcomeEnum: "SENT" | "FAILED";
         OutreachMessage: {
             /** Format: uuid */
             readonly id: string;
@@ -2313,6 +2411,11 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        ResolveSendingRequest: {
+            outcome: components["schemas"]["OutcomeEnum"];
+            /** @default  */
+            note: string;
+        };
         ResultBundleRequest: {
             schema_version: components["schemas"]["SchemaVersionEnum"];
             evidence?: components["schemas"]["EvidenceItemRequest"][];
@@ -2434,6 +2537,15 @@ export interface components {
          * @enum {string}
          */
         SourceTypeEnum: "SAAS_RESEARCH" | "LOCAL_LEADS" | "MANUAL";
+        /**
+         * @description * `RUNNING` - RUNNING
+         *     * `IDLE` - IDLE
+         *     * `WAITING` - WAITING
+         *     * `STALLED` - STALLED
+         *     * `OFFLINE` - OFFLINE
+         * @enum {string}
+         */
+        StateEnum: "RUNNING" | "IDLE" | "WAITING" | "STALLED" | "OFFLINE";
         SubjectRequest: {
             /** Format: email */
             email: string;
@@ -2492,6 +2604,15 @@ export interface components {
          * @enum {string}
          */
         SuppressionTypeEnum: "EMAIL" | "DOMAIN" | "PHONE";
+        TaskError: {
+            /** Format: uuid */
+            task_id: string;
+            status: string;
+            code: string;
+            message: string;
+            /** Format: date-time */
+            at: string;
+        };
         /**
          * @description * `QUEUED` - Queued
          *     * `RUNNING` - Running
@@ -3325,6 +3446,25 @@ export interface operations {
             };
         };
     };
+    v1_dashboard_operations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Operations"];
+                };
+            };
+        };
+    };
     v1_dashboard_summary_retrieve: {
         parameters: {
             query?: never;
@@ -3960,6 +4100,34 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutreachMessage"];
+                };
+            };
+        };
+    };
+    v1_outreach_messages_resolve_sending_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this outreach message. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveSendingRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ResolveSendingRequest"];
+                "multipart/form-data": components["schemas"]["ResolveSendingRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

@@ -11,7 +11,7 @@ from apps.accounts.auth_views import (
 from apps.accounts.views import MembershipViewSet, MeView, RegisterView, WorkspaceViewSet
 from apps.approvals.views import ApprovalViewSet
 from apps.audit.views import AuditEventViewSet
-from apps.dashboard.views import DashboardSummaryView
+from apps.dashboard.views import DashboardSummaryView, OperationsView
 from apps.integrations.views import IntegrationViewSet
 from apps.leads.views import BusinessViewSet, LeadViewSet, ProjectBriefViewSet
 from apps.orchestration import views as orch
@@ -69,6 +69,7 @@ api_v1 = [
     path("auth/password/change/", PasswordChangeView.as_view(), name="auth-password-change"),
     path("auth/me/", MeView.as_view(), name="auth-me"),
     path("dashboard/summary/", DashboardSummaryView.as_view(), name="dashboard-summary"),
+    path("dashboard/operations/", OperationsView.as_view(), name="dashboard-operations"),
     path("privacy/export/", ExportView.as_view(), name="privacy-export"),
     path("privacy/erase/", EraseView.as_view(), name="privacy-erase"),
     path("public/unsubscribe/<str:token>/", UnsubscribeView.as_view(), name="public-unsubscribe"),

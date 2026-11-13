@@ -58,11 +58,13 @@ Roles: read = VIEWER+, write = DEVELOPER+ unless noted.
 | `GET/PATCH project-briefs/`, `POST project-briefs/{id}/submit/` | |
 | `GET/PATCH campaigns/`, `POST campaigns/{id}/submit/ · launch/ · pause/ · cancel/` | launch: APPROVED/PAUSED → ACTIVE |
 | `GET/PATCH outreach-messages/`, `POST outreach-messages/{id}/cancel/` | PATCH only DRAFT in editable campaign |
+| `POST outreach-messages/{id}/resolve-sending/` `{outcome: SENT\|FAILED, note}` | ADMIN+. Settles a message stuck in `SENDING` after checking the provider (at-most-once: never resent); audited |
 | `GET approvals/`, `POST approvals/{id}/decide/` | decide = DEVELOPER+, body `{decision: APPROVED|REJECTED|CHANGES_REQUESTED, comment?, options?}` |
 | `GET/POST suppression-entries/`, `DELETE suppression-entries/{id}/` | DELETE = ADMIN+ (audited) |
 | `GET/POST/PATCH/DELETE integrations/` | ADMIN+ for writes; `secret` write-only → `has_secret` |
 | `GET audit-events/` | ADMIN+ |
 | `GET dashboard/summary/` | counts by status per entity |
+| `GET dashboard/operations/` | per agent: state (RUNNING/IDLE/WAITING/STALLED/OFFLINE), current tasks, queue, last heartbeat / success, worker last seen, stuck, failed + retries (24 h), recent errors, business/lead totals; `messages_stuck_sending`; `alerts[]` (derived from those values only) |
 | `POST privacy/export/` | ADMIN+; `{email}` → all personal data about that address in the workspace (JSON) |
 | `POST privacy/erase/` | ADMIN+; `{email, confirm: true}` → anonymize leads, redact messages, clear business email, add `LEGAL_REQUEST` suppression → `{leads_anonymized, messages_redacted, businesses_updated, suppressed}` |
 | Browser clients | must send `credentials: 'include'`; API and frontend must be same-site (cookie is `SameSite=Lax`) |

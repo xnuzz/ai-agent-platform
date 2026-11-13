@@ -1,5 +1,6 @@
 from django.core import signing
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
@@ -13,7 +14,7 @@ from apps.approvals.serializers import ApprovalSerializer, SubmitForApprovalSeri
 from apps.approvals.services import request_approval
 from apps.audit.services import record
 from apps.common.actor import Actor
-from apps.common.enums import CampaignStatus, MessageStatus, Role, SuppressionSource, SuppressionType
+from apps.common.enums import CampaignStatus, LeadStatus, MessageStatus, Role, SuppressionSource, SuppressionType
 from apps.common.exceptions import InvalidStateTransition
 from apps.common.workspace import WorkspaceScopedMixin
 
@@ -66,12 +67,18 @@ class CampaignViewSet(WorkspaceScopedMixin, mixins.ListModelMixin, mixins.Retrie
         return Response(CampaignSerializer(c).data)
 
 
+class ResolveSendingSerializer(serializers.Serializer):
+    outcome = serializers.ChoiceField(choices=[MessageStatus.SENT, MessageStatus.FAILED])
+    note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+
+
 class OutreachMessageViewSet(WorkspaceScopedMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin,
                              mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = OutreachMessageSerializer
     queryset = OutreachMessage.objects.select_related("lead__business", "campaign")
     filterset_fields = ("campaign", "lead", "status")
     http_method_names = ["get", "patch", "post"]
+    action_roles = {"resolve_sending": Role.ADMIN}
 
     def perform_update(self, serializer):
         msg = serializer.instance
@@ -91,6 +98,35 @@ class OutreachMessageViewSet(WorkspaceScopedMixin, mixins.ListModelMixin, mixins
             msg.save(update_fields=["status", "updated_at"])
         record("outreach_message.cancelled", workspace=msg.workspace, actor=Actor.for_user(request.user),
                target=msg)
+        return Response(OutreachMessageSerializer(msg).data)
+
+    @extend_schema(request=ResolveSendingSerializer, responses=OutreachMessageSerializer)
+    @action(detail=True, methods=["post"], url_path="resolve-sending")
+    def resolve_sending(self, request, pk=None):
+        """ADMIN+: settle a message stuck in SENDING after checking the mail provider (SENT or FAILED).
+        Outreach is at-most-once, so the platform never decides or resends this itself."""
+        body = ResolveSendingSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        with transaction.atomic():
+            msg = OutreachMessage.objects.select_for_update().get(pk=self.get_object().pk)
+            if msg.status != MessageStatus.SENDING:
+                raise InvalidStateTransition("Only a message in SENDING can be resolved.")
+            outcome = body.validated_data["outcome"]
+            msg.transition_to(outcome)
+            fields = ["status", "updated_at"]
+            if outcome == MessageStatus.SENT:
+                msg.sent_at = timezone.now()
+                fields.append("sent_at")
+                if msg.lead.can_transition_to(LeadStatus.CONTACTED):  # same effect as a normal send
+                    msg.lead.transition_to(LeadStatus.CONTACTED)
+                    msg.lead.save(update_fields=["status", "updated_at"])
+            else:
+                msg.error = {"code": "resolved_failed_by_user", "message": body.validated_data["note"][:300]}
+                fields.append("error")
+            msg.save(update_fields=fields)
+            record("outreach_message.sending_resolved", workspace=msg.workspace,
+                   actor=Actor.for_user(request.user), target=msg,
+                   metadata={"outcome": outcome, "note": body.validated_data["note"][:300]})
         return Response(OutreachMessageSerializer(msg).data)
 
 

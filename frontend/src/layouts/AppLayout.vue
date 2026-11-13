@@ -13,6 +13,7 @@ const nav: { to: string; label: string; icon: IconName; admin?: boolean }[] = [
   { to: '/', label: 'Dashboard', icon: 'dashboard' },
   { to: '/local-finder', label: 'Local Business Finder', icon: 'finder' },
   { to: '/tasks', label: 'Agent tasks', icon: 'tasks' },
+  { to: '/operations', label: 'Operations', icon: 'operations' },
   { to: '/approvals', label: 'Approval center', icon: 'approvals' },
   { to: '/ideas', label: 'Software ideas', icon: 'ideas' },
   { to: '/leads', label: 'Leads & briefs', icon: 'leads' },

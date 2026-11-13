@@ -4,6 +4,21 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-13 (later) — Team 3 + Team 2 — Commercial intelligence, operations dashboard, cost controls
+
+**Implemented (tested)**
+- **Shadow commercial score** (`local_leads/commercial.py`, 🟡 shadow): need (severity × per-finding confidence), value (project size vs a typical local site), contactability, legitimacy, × data confidence, closed-business gate. Facts vs estimates separated: revenue = quoted range; dev cost / profit only with `COST_HOURLY_RATE` (never guessed); no win probability → no expected value. Attached as `source_data.commercial_v1` + one line in `qualification_notes`; production score/status unchanged. Eval set `tests/agent_2/data/commercial_eval.json` (12 author-labelled synthetic cases): pairwise 0.98 shadow vs 0.88 production — **circular** (same author designed and labelled), one visible miss (healthy site above a dead-site lead).
+- **Operations dashboard:** `GET dashboard/operations/` + `/operations` page. Per agent: state, current task + progress, queue + oldest, last heartbeat, last success, worker last seen (agent-token use), stuck, failed/retries 24 h, recent errors, business/lead totals; alerts for stalled tasks, offline worker with queued work, failures, messages stuck in SENDING. All values from DB rows.
+- **Recovery:** `POST outreach-messages/{id}/resolve-sending/` (ADMIN+, audited; SENT also marks the lead CONTACTED). Never resends.
+- **Pilot tooling:** `manage.py pilot_report export <task_id> out.csv` (review sheet incl. shadow score, estimates, outreach subject) and `score labelled.csv` (discovery/website/contact/problem/price/outreach accuracy + ranking agreement of production vs shadow, over labelled rows only).
+- **Cost controls (Agent 2):** in-process LLM response cache, per-task LLM call budget `LLM_MAX_CALLS_PER_TASK` (templates beyond it, noted), token accounting from API responses in the task summary (`llm_usage`), website-scan reuse across tasks `SCAN_CACHE_HOURS` (successful scans only).
+**API:** additive (`dashboard/operations/`, `resolve-sending`); `docs/openapi.yaml` + `frontend/src/api/schema.d.ts` regenerated; `API_CONTRACTS.md`, `AGENT_2_CONTRACT.md`, Agent 2 README updated.
+**Tests:** full `pytest` (Windows + Postgres): **260 passed, 0 failed** (259 in the full run + 1 added after it, re-run with its files). New: 4 commercial, 3 cost, 5 operations, 1 pilot report. `vue-tsc -b` + `npm run build` pass. OpenAPI in sync, no migrations. Playwright spec `e2e/operations.spec.ts` added but **not run**.
+**Blocked:** live BG pilot — overpass-api.de "at capacity" (502), mirrors (private.coffee, kumi, mail.ru) time out; no Google Places key. Playwright: Chromium not installed here (download needs approval). Docker: no daemon.
+**Not done:** alert delivery (e-mail/Slack); persistent (cross-restart) caches; USD cost (no price table invented — tokens only); shadow score not promoted.
+
+---
+
 ## 2026-11-13 — Team 3 (Lead Architect) — Stability + security hardening, BG compliance gate
 
 **Implemented (tested)**

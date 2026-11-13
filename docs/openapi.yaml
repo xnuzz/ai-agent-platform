@@ -953,6 +953,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Approval'
           description: ''
+  /api/v1/dashboard/operations/:
+    get:
+      operationId: v1_dashboard_operations_retrieve
+      description: Agent health for this workspace, computed from tasks, leases, heartbeats
+        and agent-token use.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operations'
+          description: ''
   /api/v1/dashboard/summary/:
     get:
       operationId: v1_dashboard_summary_retrieve
@@ -1825,6 +1841,43 @@ paths:
         required: true
       tags:
       - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutreachMessage'
+          description: ''
+  /api/v1/outreach-messages/{id}/resolve-sending/:
+    post:
+      operationId: v1_outreach_messages_resolve_sending_create
+      description: |-
+        ADMIN+: settle a message stuck in SENDING after checking the mail provider (SENT or FAILED).
+        Outreach is at-most-once, so the platform never decides or resends this itself.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this outreach message.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveSendingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolveSendingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolveSendingRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -2805,6 +2858,70 @@ components:
           type: string
           default: ''
           maxLength: 2
+    AgentOps:
+      type: object
+      properties:
+        agent:
+          type: string
+        state:
+          $ref: '#/components/schemas/StateEnum'
+        worker_last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_heartbeat_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_success_at:
+          type: string
+          format: date-time
+          nullable: true
+        current_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrentTask'
+        queued:
+          type: integer
+        oldest_queued_at:
+          type: string
+          format: date-time
+          nullable: true
+        stuck:
+          type: integer
+          description: RUNNING tasks whose lease expired (the reaper requeues or fails
+            them)
+        failed_24h:
+          type: integer
+        retries_24h:
+          type: integer
+          description: Extra attempts on tasks updated in the last 24 h
+        recent_errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskError'
+        businesses:
+          type: integer
+        leads:
+          type: integer
+        qualified_leads:
+          type: integer
+      required:
+      - agent
+      - businesses
+      - current_tasks
+      - failed_24h
+      - last_heartbeat_at
+      - last_success_at
+      - leads
+      - oldest_queued_at
+      - qualified_leads
+      - queued
+      - recent_errors
+      - retries_24h
+      - state
+      - stuck
+      - worker_last_seen_at
     AgentTask:
       type: object
       properties:
@@ -2881,6 +2998,22 @@ components:
       description: |-
         * `SAAS_RESEARCH` - Agent 1 - SaaS Opportunity Research
         * `LOCAL_LEADS` - Agent 2 - Local Business Lead Finder
+    Alert:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        code:
+          type: string
+        message:
+          type: string
+        agent:
+          type: string
+      required:
+      - agent
+      - code
+      - level
+      - message
     Approval:
       type: object
       properties:
@@ -3462,6 +3595,39 @@ components:
           type: string
           default: ''
           maxLength: 2000
+    CurrentTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_type:
+          type: string
+        stage:
+          type: string
+        progress:
+          type: integer
+        progress_message:
+          type: string
+        attempt:
+          type: integer
+        heartbeat_at:
+          type: string
+          format: date-time
+          nullable: true
+        lease_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - attempt
+      - heartbeat_at
+      - id
+      - lease_expires_at
+      - progress
+      - progress_message
+      - stage
+      - task_type
     DecisionRequest:
       type: object
       properties:
@@ -3988,6 +4154,14 @@ components:
         * `LEGITIMATE_INTEREST` - Legitimate Interest
         * `CONSENT` - Consent
         * `UNKNOWN` - Unknown
+    LevelEnum:
+      enum:
+      - warning
+      - critical
+      type: string
+      description: |-
+        * `warning` - warning
+        * `critical` - critical
     Membership:
       type: object
       properties:
@@ -4094,6 +4268,27 @@ components:
           type: string
           default: ''
           maxLength: 500
+    Operations:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentOps'
+        messages_stuck_sending:
+          type: integer
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+      required:
+      - agents
+      - alerts
+      - generated_at
+      - messages_stuck_sending
     Opportunity:
       type: object
       properties:
@@ -4227,6 +4422,14 @@ components:
           $ref: '#/components/schemas/OpportunityStatusEnum'
       required:
       - status
+    OutcomeEnum:
+      enum:
+      - SENT
+      - FAILED
+      type: string
+      description: |-
+        * `SENT` - SENT
+        * `FAILED` - FAILED
     OutreachMessage:
       type: object
       properties:
@@ -5313,6 +5516,17 @@ components:
       - status
       - task_type
       - updated_at
+    ResolveSendingRequest:
+      type: object
+      properties:
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - outcome
     ResultBundleRequest:
       type: object
       properties:
@@ -5590,6 +5804,20 @@ components:
         * `SAAS_RESEARCH` - Agent 1
         * `LOCAL_LEADS` - Agent 2
         * `MANUAL` - Manual (user)
+    StateEnum:
+      enum:
+      - RUNNING
+      - IDLE
+      - WAITING
+      - STALLED
+      - OFFLINE
+      type: string
+      description: |-
+        * `RUNNING` - RUNNING
+        * `IDLE` - IDLE
+        * `WAITING` - WAITING
+        * `STALLED` - STALLED
+        * `OFFLINE` - OFFLINE
     SubjectRequest:
       type: object
       properties:
@@ -5718,6 +5946,27 @@ components:
         * `EMAIL` - Email
         * `DOMAIN` - Domain
         * `PHONE` - Phone
+    TaskError:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        at:
+          type: string
+          format: date-time
+      required:
+      - at
+      - code
+      - message
+      - status
+      - task_id
     TaskStatusEnum:
       enum:
       - QUEUED

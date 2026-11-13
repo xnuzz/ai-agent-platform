@@ -15,6 +15,7 @@ export const router = createRouter({
       component: AppLayout,
       children: [
         { path: '', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
+        { path: 'operations', name: 'operations', component: () => import('@/views/OperationsView.vue') },
         { path: 'tasks', name: 'tasks', component: () => import('@/views/TasksView.vue') },
         { path: 'tasks/:id', name: 'task', component: () => import('@/views/TaskDetailView.vue'), props: true },
         { path: 'approvals', name: 'approvals', component: () => import('@/views/ApprovalsView.vue') },
