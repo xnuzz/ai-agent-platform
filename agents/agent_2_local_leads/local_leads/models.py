@@ -28,8 +28,15 @@ class TaskInput:
     max_businesses: int = 25
     checks: list[str] = field(default_factory=list)
     min_score: int = 50
-    language: str = "en"
+    language: str = "auto"         # "auto" = local language of the business's country (market.py)
     notes: str = ""
+
+    def language_for(self, country_code: str) -> str:
+        """Outreach language: the explicit task language, else the local language of the business's country."""
+        if self.language.lower() not in ("", "auto"):
+            return self.language
+        from .market import market_for
+        return market_for(country_code or self.location.country_code).language
 
     @classmethod
     def parse(cls, data: dict) -> "TaskInput":
@@ -49,7 +56,7 @@ class TaskInput:
             max_businesses=min(200, max(1, int(data.get("max_businesses") or 25))),
             checks=[str(c).strip().upper() for c in (data.get("checks") or []) if str(c).strip()],
             min_score=min(100, max(0, int(data["min_score"]))) if data.get("min_score") is not None else 50,
-            language=(str(data.get("language") or "en").strip() or "en")[:10],
+            language=(str(data.get("language") or "auto").strip() or "auto")[:10],
             notes=str(data.get("notes") or ""),
         )
 

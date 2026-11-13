@@ -8,8 +8,10 @@ the backend enforces approvals, suppression and compliance.
 
 ## What it does
 ```
-input.location ──▶ discovery provider ──▶ businesses (≤ max_businesses, deduped by id + website domain)
-   └─ per batch of BATCH_SIZE (default 10):
+input.location ──▶ discovery provider ──▶ 2× max_businesses candidates, deduped by id + website domain
+               ──▶ ranked: reachable (phone/e-mail) without a website > reachable with a website > unreachable
+               ──▶ best max_businesses kept
+   └─ first batch of 3 (first leads reach the dashboard map quickly), then batches of BATCH_SIZE (default 10):
         SCANNING_WEBSITES   real HTTP(S) checks (robots.txt, rate limit, timeouts, bounded size)
         QUALIFYING          problems → deterministic score → QUALIFIED iff score ≥ min_score (DISQUALIFIED still submitted)
                             ctx.check_suppression(contacts) before any drafting
@@ -86,7 +88,8 @@ Compose service — **not** added to Team 3's `docker-compose.yml` (requested in
 | `WORKER_ID`, `POLL_INTERVAL`, `HEARTBEAT_INTERVAL` | host-based, `5`, `60` | worker identity / polling / lease keepalive (s) |
 | `DISCOVERY_PROVIDER` | `google_places` | `google_places` · `osm` · `fake` (🧪 mock) |
 | `GOOGLE_PLACES_API_KEY` | — | required for `google_places` |
-| `OSM_OVERPASS_URL`, `OSM_NOMINATIM_URL` | public instances | for `osm` |
+| `OSM_OVERPASS_URL`, `OSM_NOMINATIM_URL` | public instances | for `osm`; `OSM_OVERPASS_URL` takes comma-separated mirrors (tried in order on 429/5xx/timeout); one Overpass query per category |
+| `FIND_MISSING_WEBSITES` | `true` | for businesses whose listing has no website, try domains guessed from the name (`<name>.<ccTLD>`, `.com`) and accept one only if the page shows the name **and** the phone or city (`analyzer/sitefinder.py`) |
 | `FAKE_DISCOVERY_FILE` | — | JSON fixture for `fake` |
 | `LLM_PROVIDER` | `anthropic` | `anthropic` · `fake` (🧪 mock) · `template` (no LLM) |
 | `LLM_MODEL` | `claude-sonnet-5-5` | any model id the provider accepts |
@@ -95,14 +98,14 @@ Compose service — **not** added to Team 3's `docker-compose.yml` (requested in
 | `LLM_SERVER_FALLBACK` | `true` | Anthropic server-side refusal fallback (`fallbacks: "default"`, Claude API only) |
 | `LLM_TIMEOUT`, `LLM_MAX_RETRIES` | `120`, `2` | SDK timeout (s) / retries (429, 5xx, network) |
 | `BATCH_SIZE` | `10` | businesses per submitted bundle |
-| `BRIEF_HOURLY_RATE`, `BRIEF_CURRENCY` | `60`, `EUR` | budget = hours × rate (rounded to 50) |
+| `BRIEF_HOURLY_RATE`, `BRIEF_CURRENCY` | market (`market.py`) | budget = hours × the local market rate in the local currency of the business's country (e.g. BG EUR 25/h, DE EUR 70/h, GB GBP 50/h, US USD 75/h), rounded to a quote-like number; set both to override |
 | `CRAWLER_INFO_URL` | placeholder (warns) | contact/info URL in the User-Agent |
 | `CRAWLER_MIN_HOST_INTERVAL` | `1.0` | seconds between requests to one host |
 | `CRAWLER_MAX_CRAWL_DELAY` | `10` | robots `Crawl-delay` honoured up to this; above → homepage only |
 | `CRAWLER_CONNECT_TIMEOUT`, `CRAWLER_READ_TIMEOUT` | `5`, `10` | per request; plus a wall-clock deadline |
 | `CRAWLER_MAX_PAGE_BYTES` | `1500000` | bounded download per page |
 | `CRAWLER_MAX_LINK_CHECKS` | `8` | broken-link sample (same-site links only) |
-| `CRAWLER_CONCURRENCY` | `4` | sites scanned in parallel (different hosts) |
+| `CRAWLER_CONCURRENCY` | `8` | sites scanned in parallel (different hosts) |
 | `CRAWLER_SLOW_PAGE_SECONDS`, `CRAWLER_SSL_EXPIRY_WARNING_DAYS` | `3.0`, `14` | thresholds |
 | `CRAWLER_CA_BUNDLE`, `CRAWLER_TRUST_ENV` | system CAs, `true` | TLS trust store / honour proxy env vars |
 
@@ -125,15 +128,47 @@ Compose service — **not** added to Team 3's `docker-compose.yml` (requested in
 | ≥ 3 of CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, HSTS missing | `SECURITY_HEADERS_MISSING` |
 | missing alt texts, no `lang`, unlabelled fields, zoom disabled | `ACCESSIBILITY_ISSUES` |
 | sampled same-site links returning ≥ 400 / failing | `BROKEN_LINKS` |
-| no website in listing | `NO_WEBSITE` |
+| no website in listing and none found by `FIND_MISSING_WEBSITES` | `NO_WEBSITE` |
 `NO_GOOGLE_BUSINESS_PROFILE` is in the catalog but **not detected** (no provider signal yet).
 `checks` input limits both the reported codes and the requests made (e.g. no link sampling unless `BROKEN_LINKS`).
 
 ## Scoring (deterministic)
 `score = min(85, Σ weight of distinct problem codes) + contact adjustment` (generic e-mail +10, other
-e-mail +3, none −10), clamped 0–100; weights in `problems.py`. `QUALIFIED` iff `score ≥ min_score`.
+e-mail +3, none −10, no e-mail and no phone −30), clamped 0–100; weights in `problems.py`. `QUALIFIED` iff `score ≥ min_score`.
 The full breakdown is written to `qualification_notes`. Budget/hours come from `briefs.py` rules, never
 from the LLM; the LLM only phrases them.
+
+## Bulgaria market pack (`bulgaria.py`)
+For businesses in BG (everything country-specific lives in one module):
+- **Who:** chains/brands dropped (OSM `brand*` tags, exact BG chain names, prefix-matched distinctive brands);
+  Bulgarian category words ("зъболекар", "автосервиз", "къща за гости" …) map to OSM tags; with no categories, 18
+  high-need BG niches are searched (dentists, salons, auto repair, tyres, guest houses, restaurants, accountants …);
+  a BG mobile number (087/088/089/098/099 → owner-run) ranks first within its tier; phones normalised to +359.
+- **Signals:** `SOCIAL_MEDIA_ONLY` (Facebook/Instagram/portal page instead of a site; the finder still looks for a
+  real one), `FREE_SUBDOMAIN` (hit.bg, alle.bg, wixsite …), and on BG sites `PRICES_IN_BGN` (prices only in лв.;
+  euro-only display since 2026-08-08), `MISSING_COMPANY_INFO` (ЗЕТ чл. 4), `NO_PRIVACY_POLICY` (GDPR), windows-1251
+  → `OUTDATED_DESIGN`; Bulgarian booking words ("запази час") count as online booking. Text that cannot be decoded
+  is never used to claim something is missing.
+- **Compliance (ЗЕТ чл. 6):** BG subjects start with "Търговско предложение:"; prices say "без ДДС" (чл. 4, ал. 2);
+  generic business addresses → LEGITIMATE_INTEREST with a note to check the КЗП opt-out register; free-mail
+  (abv.bg, mail.bg, gmail …) → UNKNOWN (possibly a person; consent needed), so sending stays blocked until a human
+  decides. Portal/social addresses are never chosen as the contact.
+- **Selling:** briefs get BG talking points: recurring revenue (.bg domain, hosting, maintenance), season timing for
+  Black Sea / ski resorts, the euro price-list update as an easy first job, "call the mobile number".
+- OSM discovery queries categories in groups of 4 (2 in parallel) so the 18 default niches cost 5 queries.
+
+## Outreach: language, sales playbook, market pricing
+- **Language:** task `language` defaults to `auto` = the local language of each business's country (`market.py`);
+  an explicit ISO code forces that language. Templates exist in English, Bulgarian and German (formal address);
+  with an LLM any language is written natively; otherwise English with a note to the reviewer.
+- **Sales playbook** (`writing.SALES_PLAYBOOK`, used by the LLM and mirrored in the templates): open with a specific,
+  verified observation about *their* business → translate each fact into customer impact (missed calls,
+  bookings, trust, Google position) → pick the 2-3 biggest → one clear offer with the local price → one
+  low-friction yes/no question. No invented guarantees, discounts, testimonials, statistics or urgency.
+  Briefs end with talking points for the call.
+- **Pricing:** `market.py` holds mid-market 2026 freelancer/small-studio rates per country, calibrated so a
+  5-page site lands in the typical local range (BG ~EUR 950-1,550, DE ~EUR 2,600-4,350, GB ~GBP 1,850-3,100,
+  US ~USD 2,800-4,650). Static table: refresh yearly.
 
 ## LLM layer
 `LLMProvider.generate_json(task, system, prompt, schema)` → dict. Anthropic implementation uses the

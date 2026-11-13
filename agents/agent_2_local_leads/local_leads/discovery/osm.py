@@ -2,6 +2,7 @@
 
 1. Geocode the city with Nominatim (only when the task has no coordinates; one request per task).
 2. One Overpass query: named shops/amenities/offices matching the categories within `radius_km`.
+   `overpass_url` may list several comma-separated mirrors; a transient failure moves on to the next one.
 Usage policies: identify with a User-Agent, keep volume low (Nominatim max 1 req/s), attribute
 "© OpenStreetMap contributors" (ODbL) - carried in evidence metadata. Transport is injectable for tests.
 """
@@ -9,14 +10,19 @@ from __future__ import annotations
 
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
+from itertools import zip_longest
 
 import httpx
 
+from .. import bulgaria
 from ..models import DiscoveredBusiness, TaskInput
 from .base import DiscoveryError, DiscoveryProvider, DiscoveryUnavailable, categories_for
 
 logger = logging.getLogger("local_leads.discovery.osm")
 ATTRIBUTION = "© OpenStreetMap contributors (ODbL)"
+OVERPASS_PARALLEL = 2
+OVERPASS_GROUP = 4      # categories per Overpass query
 CATEGORY_TAGS: dict[str, list[str]] = {
     "dentist": ["amenity=dentist"], "bakery": ["shop=bakery"], "restaurant": ["amenity=restaurant"],
     "cafe": ["amenity=cafe"], "coffee": ["amenity=cafe"], "bar": ["amenity=bar", "amenity=pub"],
@@ -33,6 +39,7 @@ CATEGORY_TAGS: dict[str, list[str]] = {
     "butcher": ["shop=butcher"], "gym": ["leisure=fitness_centre"], "fitness": ["leisure=fitness_centre"],
     "yoga": ["leisure=fitness_centre"], "bookstore": ["shop=books"], "clothing": ["shop=clothes"],
     "dry cleaning": ["shop=dry_cleaning"], "tattoo": ["shop=tattoo"], "driving school": ["amenity=driving_school"],
+    **bulgaria.EXTRA_TAGS, **bulgaria.CATEGORY_TAGS,
 }
 
 
@@ -44,12 +51,17 @@ def _tag_filters(category: str) -> list[str]:
     return [f'["name"~"{safe}",i]'] if safe else []
 
 
+def _phone(raw: str, country: str) -> str:
+    return bulgaria.normalize_phone(raw) if country.upper() == bulgaria.COUNTRY else raw
+
+
 class OSMProvider(DiscoveryProvider):
     name = "osm"
 
     def __init__(self, *, user_agent: str, overpass_url: str, nominatim_url: str,
-                 transport: httpx.BaseTransport | None = None, timeout: float = 40.0):
-        self.overpass_url, self.nominatim_url = overpass_url, nominatim_url
+                 transport: httpx.BaseTransport | None = None, timeout: float = 90.0):
+        self.overpass_urls = [u.strip() for u in overpass_url.split(",") if u.strip()]
+        self.nominatim_url = nominatim_url
         self._http = httpx.Client(transport=transport, timeout=timeout, headers={"User-Agent": user_agent})
 
     def close(self) -> None:
@@ -81,29 +93,56 @@ class OSMProvider(DiscoveryProvider):
         lat, lon = ((loc.latitude, loc.longitude) if loc.latitude is not None and loc.longitude is not None
                     else self.geocode(inp))
         radius_m = int(loc.radius_km * 1000)
-        parts, cat_of = [], {}
-        for cat in categories_for(inp):
-            for f in _tag_filters(cat):
-                parts.append(f'nwr{f}["name"](around:{radius_m},{lat},{lon});')
-                cat_of[f] = cat
-        if not parts:
-            return []
-        query = f"[out:json][timeout:25];({''.join(parts)});out center tags {max(limit * 3, 30)};"
-        data = self._call("POST", self.overpass_url, data={"data": query}).json()
+        # Small groups of categories per query: one big union times out on busy public instances, one query per
+        # category gets the client rate-limited (18 default BG niches); a failed group costs only its own results.
+        def one(cats: list[str]) -> list[DiscoveredBusiness] | DiscoveryUnavailable:
+            cat_of = {f: cat for cat in cats for f in _tag_filters(cat)}
+            if not cat_of:
+                return []
+            parts = "".join(f'nwr{f}["name"](around:{radius_m},{lat},{lon});' for f in cat_of)
+            out_n = max(limit, 20) * len(cats)
+            try:
+                data = self._overpass(f"[out:json][timeout:60];({parts});out center tags {out_n};")
+            except DiscoveryUnavailable as exc:
+                return exc
+            return [b for el in data.get("elements", []) if (b := self._to_business(el, inp, cat_of))]
+
+        cats = categories_for(inp)
+        groups = [cats[i:i + OVERPASS_GROUP] for i in range(0, len(cats), OVERPASS_GROUP)]
+        # Public Overpass allows 2 concurrent queries per client.
+        with ThreadPoolExecutor(max_workers=OVERPASS_PARALLEL) as pool:
+            results = list(pool.map(one, groups))
+        failures = [r for r in results if isinstance(r, DiscoveryUnavailable)]
+        by_cat: dict[str, list[DiscoveredBusiness]] = {c: [] for c in cats}
+        for b in (b for r in results if isinstance(r, list) for b in r):
+            by_cat.setdefault(b.category, []).append(b)
+        per_cat = [row for row in by_cat.values() if row]
+        if failures and not per_cat:
+            raise failures[0]
         out: dict[str, DiscoveredBusiness] = {}
-        for el in data.get("elements", []):
-            b = self._to_business(el, inp, cat_of)
-            if b and b.provider_id not in out:
-                out[b.provider_id] = b
+        for b in (b for row in zip_longest(*per_cat) for b in row if b):  # interleave categories
+            out.setdefault(b.provider_id, b)
             if len(out) >= limit:
                 break
         return list(out.values())
+
+    def _overpass(self, query: str) -> dict:
+        last: DiscoveryUnavailable | None = None
+        for url in self.overpass_urls:
+            try:
+                return self._call("POST", url, data={"data": query}).json()
+            except DiscoveryUnavailable as exc:  # busy/slow public instance -> try the next mirror
+                logger.warning("%s", exc)
+                last = exc
+        raise last or DiscoveryUnavailable("no Overpass URL configured")
 
     @staticmethod
     def _to_business(el: dict, inp: TaskInput, cat_of: dict[str, str]) -> DiscoveredBusiness | None:
         tags = el.get("tags") or {}
         name = (tags.get("name") or "").strip()
         if not name or "type" not in el or "id" not in el:
+            return None
+        if bulgaria.is_chain(name, tags):  # chains and brands are not small-business clients
             return None
         category = ""
         for f, cat in cat_of.items():
@@ -118,7 +157,8 @@ class OSMProvider(DiscoveryProvider):
             provider="osm", provider_id=pid, name=name, category=category or next(iter(cat_of.values()), ""),
             website=tags.get("website") or tags.get("contact:website") or tags.get("url") or "",
             email=tags.get("email") or tags.get("contact:email") or "",
-            phone=tags.get("phone") or tags.get("contact:phone") or "",
+            phone=_phone(tags.get("phone") or tags.get("contact:phone") or tags.get("contact:mobile") or "",
+                         tags.get("addr:country") or inp.location.country_code),
             address_line1=street, city=tags.get("addr:city") or inp.location.city,
             postal_code=tags.get("addr:postcode", ""),
             country_code=(tags.get("addr:country") or inp.location.country_code).upper()[:2],

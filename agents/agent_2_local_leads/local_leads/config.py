@@ -38,7 +38,7 @@ class CrawlerSettings:
     min_host_interval: float = 1.0                # seconds between requests to the same host
     max_crawl_delay: float = 10.0                 # robots Crawl-delay above this -> homepage only
     max_link_checks: int = 8                      # broken-link sample size (same-host links only)
-    concurrency: int = 4                          # websites scanned in parallel (different hosts)
+    concurrency: int = 8                          # websites scanned in parallel (different hosts)
     slow_page_seconds: float = 3.0                # SLOW_PAGE_LOAD threshold (HTML document download)
     ssl_expiry_warning_days: int = 14
     ca_bundle: str = ""                           # custom CA file for TLS verification (tests / corp proxies)
@@ -59,7 +59,7 @@ class Settings:
 
     discovery_provider: str = "google_places"     # google_places | osm | fake
     google_places_api_key: str = ""
-    osm_overpass_url: str = "https://overpass-api.de/api/interpreter"
+    osm_overpass_url: str = "https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter"  # comma-separated mirrors
     osm_nominatim_url: str = "https://nominatim.openstreetmap.org/search"
     fake_discovery_file: str = ""
 
@@ -71,9 +71,10 @@ class Settings:
     llm_max_retries: int = 2
     llm_server_fallback: bool = True              # Anthropic server-side refusal fallback ("default" routing)
 
+    find_missing_websites: bool = True            # guess + verify a site when the listing has none
     batch_size: int = 10
-    hourly_rate: float = 60.0
-    currency: str = ""                            # "" -> derived from country (see briefs.currency_for)
+    hourly_rate: float = 0.0                      # 0 -> local market rate of the business's country (market.py)
+    currency: str = ""                            # "" -> market currency (or EUR when hourly_rate is overridden)
     crawler: CrawlerSettings = field(default_factory=CrawlerSettings)
 
     @classmethod
@@ -97,8 +98,9 @@ class Settings:
             llm_timeout=_float("LLM_TIMEOUT", 120.0, e),
             llm_max_retries=_int("LLM_MAX_RETRIES", 2, e),
             llm_server_fallback=_bool("LLM_SERVER_FALLBACK", True, e),
+            find_missing_websites=_bool("FIND_MISSING_WEBSITES", True, e),
             batch_size=max(1, _int("BATCH_SIZE", 10, e)),
-            hourly_rate=_float("BRIEF_HOURLY_RATE", 60.0, e),
+            hourly_rate=_float("BRIEF_HOURLY_RATE", 0.0, e),
             currency=_env("BRIEF_CURRENCY", "", e).upper(),
             crawler=CrawlerSettings(
                 info_url=_env("CRAWLER_INFO_URL", DEFAULT_CRAWLER_INFO_URL, e),
@@ -108,7 +110,7 @@ class Settings:
                 min_host_interval=_float("CRAWLER_MIN_HOST_INTERVAL", 1.0, e),
                 max_crawl_delay=_float("CRAWLER_MAX_CRAWL_DELAY", 10.0, e),
                 max_link_checks=_int("CRAWLER_MAX_LINK_CHECKS", 8, e),
-                concurrency=max(1, _int("CRAWLER_CONCURRENCY", 4, e)),
+                concurrency=max(1, _int("CRAWLER_CONCURRENCY", 8, e)),
                 slow_page_seconds=_float("CRAWLER_SLOW_PAGE_SECONDS", 3.0, e),
                 ssl_expiry_warning_days=_int("CRAWLER_SSL_EXPIRY_WARNING_DAYS", 14, e),
                 ca_bundle=_env("CRAWLER_CA_BUNDLE", "", e),

@@ -57,7 +57,7 @@ def test_agent2_end_to_end_against_live_backend(live_server, sites):
     user.post("suppression-entries/", {"type": "EMAIL", "value": "info@quietflorist.test", "reason": "OPT_OUT"})
     florist.routes["/"].body = florist.routes["/"].body.replace("info@cornerbakery.test", "info@quietflorist.test")
 
-    settings = Settings(platform_api_url=base, discovery_provider="fake", llm_provider="fake", batch_size=2,
+    settings = Settings(find_missing_websites=False, platform_api_url=base, discovery_provider="fake", llm_provider="fake", batch_size=2,
                         poll_interval=0.1, heartbeat_interval=30,
                         crawler=CrawlerSettings(info_url="https://bot-info.test", min_host_interval=0.0,
                                                 connect_timeout=2, read_timeout=3, trust_env=False))

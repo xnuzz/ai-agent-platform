@@ -36,7 +36,7 @@ class SiteServer:
 
             def _serve(self, head=False):
                 path = self.path.split("?")[0]
-                server.requests.append({"method": self.command, "path": path, "t": time.monotonic(),
+                server.requests.append({"method": self.command, "path": path, "t": time.perf_counter(),
                                         "ua": self.headers.get("User-Agent", "")})
                 route = server.routes.get(path)
                 if callable(route):
@@ -193,7 +193,8 @@ GOOD_HOME = """<!doctype html><html lang="en"><head><title>Modern Dental Studio 
 <meta name="description" content="Family dentistry in Plovdiv.">
 <link rel="canonical" href="/"><script async src="https://www.googletagmanager.com/gtag/js?id=G-1"></script>
 </head><body><h1>Modern Dental Studio</h1><img src="/team.jpg" alt="Our team">
-<a href="/contact">Contact</a> <a href="/booking">Book an appointment online</a></body></html>"""
+<a href="/contact">Contact</a> <a href="/booking">Book an appointment online</a>
+<footer>Modern Dental Studio EOOD, ЕИК 123456789 · <a href="/privacy">Privacy policy</a></footer></body></html>"""
 
 GOOD_CONTACT = """<!doctype html><html lang="en"><head><title>Contact - Modern Dental Studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>Contact</h1>
@@ -217,4 +218,5 @@ def poor_site_routes() -> dict:
 def good_site_routes() -> dict:
     return {"/": Route(GOOD_HOME, headers=SECURITY_HEADERS), "/contact": Route(GOOD_CONTACT, headers=SECURITY_HEADERS),
             "/booking": Route("<html><body>Booking</body></html>", headers=SECURITY_HEADERS),
+            "/privacy": Route("<html><body>Privacy policy</body></html>", headers=SECURITY_HEADERS),
             "/robots.txt": Route("User-agent: *\nAllow: /\n", headers={"Content-Type": "text/plain"})}

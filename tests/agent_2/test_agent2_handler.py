@@ -18,7 +18,7 @@ STAGES = ["PLANNING", "DISCOVERING_BUSINESSES", "SCANNING_WEBSITES", "QUALIFYING
 
 
 def settings(**kw) -> Settings:
-    return Settings(llm_provider="fake", discovery_provider="fake", batch_size=kw.pop("batch_size", 10),
+    return Settings(find_missing_websites=False, llm_provider="fake", discovery_provider="fake", batch_size=kw.pop("batch_size", 10),
                     crawler=CrawlerSettings(info_url="https://bot-info.test", min_host_interval=0.0,
                                             connect_timeout=2, read_timeout=3, trust_env=False), **kw)
 
@@ -120,7 +120,7 @@ def test_full_run_conforms_and_qualifies(sites):
     assert set(campaigns) == {poor["ref"]}
     msg = campaigns[poor["ref"]]["messages"][0]
     assert campaigns[poor["ref"]]["project_brief_ref"] == pb["ref"]
-    assert msg["language"] == "en" and "unsubscribe" not in msg["body"].lower()
+    assert msg["language"] == "bg" and "unsubscribe" not in msg["body"].lower()  # auto: business is in BG
     florist = by_name["Quiet Florist"]
     assert florist["status"] == "QUALIFIED" and briefs[florist["ref"]]["submit_for_approval"] is False
     assert "suppression list" in briefs[florist["ref"]]["approval_summary"]
@@ -154,7 +154,7 @@ def test_template_fallback_when_llm_fails(sites):
     assert_bundles_conform(ctx.bundles)
     assert summary["template_written"] >= 2 and summary["llm_written"] == 0
     msg = merged(ctx.bundles, "campaigns")[0]["messages"][0]
-    assert msg["language"] == "en"                                       # honest: template text is English
+    assert msg["language"] == "de" and msg["body"].startswith("Guten Tag")  # native German template
     assert "Text by template" in merged(ctx.bundles, "project_briefs")[0]["approval_summary"]
 
 

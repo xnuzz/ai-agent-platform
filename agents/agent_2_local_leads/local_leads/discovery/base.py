@@ -31,7 +31,11 @@ class DiscoveryProvider(ABC):
 
 
 def categories_for(inp: TaskInput) -> list[str]:
-    return inp.categories or list(DEFAULT_CATEGORIES)
+    if inp.categories:
+        return inp.categories
+    from .. import bulgaria
+    return list(bulgaria.DEFAULT_CATEGORIES if inp.location.country_code.upper() == bulgaria.COUNTRY
+                else DEFAULT_CATEGORIES)
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

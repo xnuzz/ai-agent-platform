@@ -76,6 +76,16 @@ def choose_contact(candidates: list[tuple[str, str]], *, business_name: str, web
     if not ranked:
         return None
     *_, email, kind, source = min(ranked)
+    bg = (country_code or "").upper() == "BG"
+    if bg:
+        from .bulgaria import FREE_MAIL, LEGAL_ENTITY_NOTE, PERSON_NOTE
+        if email.split("@", 1)[1] in FREE_MAIL:  # free-mail = likely a sole trader / person, whatever the local part
+            return ContactChoice(email=email, email_type="UNKNOWN", legal_basis="UNKNOWN", source=source,
+                                 legal_basis_note=PERSON_NOTE)
+        if kind == "GENERIC_BUSINESS":
+            return ContactChoice(email=email, email_type=kind, legal_basis="LEGITIMATE_INTEREST", source=source,
+                                 legal_basis_note=f"Generic business address published by the business ({source}). "
+                                                  + LEGAL_ENTITY_NOTE)
     if kind == "GENERIC_BUSINESS":
         return ContactChoice(
             email=email, email_type=kind, legal_basis="LEGITIMATE_INTEREST", source=source,

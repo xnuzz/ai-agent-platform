@@ -25,7 +25,7 @@ export const SERVICES: { id: string; label: string; hint: string; checks: string
 ]
 
 export const LANGUAGES = [
-  ['en', 'English'], ['bg', 'Bulgarian'], ['de', 'German'], ['fr', 'French'], ['es', 'Spanish'], ['it', 'Italian'],
+  ['auto', 'Local language (auto)'], ['en', 'English'], ['bg', 'Bulgarian'], ['de', 'German'], ['fr', 'French'], ['es', 'Spanish'], ['it', 'Italian'],
   ['nl', 'Dutch'], ['pl', 'Polish'], ['pt', 'Portuguese'], ['ro', 'Romanian'], ['el', 'Greek'], ['cs', 'Czech'],
 ] as const
 

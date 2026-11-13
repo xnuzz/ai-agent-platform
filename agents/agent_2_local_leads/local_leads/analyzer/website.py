@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
+from .. import bulgaria
 from ..config import CrawlerSettings
 from ..models import Finding
 from ..problems import ALL_CODES, spec
@@ -102,8 +103,8 @@ class WebsiteAnalyzer:
         self.fetcher.close()
 
     # ================================================================== entry point
-    def analyze(self, website: str, *, category: str = "", wanted: set[str] | frozenset[str] = ALL_CODES
-                ) -> ScanResult:
+    def analyze(self, website: str, *, category: str = "", wanted: set[str] | frozenset[str] = ALL_CODES,
+                country: str = "") -> ScanResult:
         url = normalize_url(website)
         res = ScanResult(url=url, retrieved_at=datetime.now(timezone.utc).isoformat())
         wanted = set(wanted)
@@ -173,6 +174,8 @@ class WebsiteAnalyzer:
             contact_page = self._contact_page(res, page, verify)
         if home.is_html:
             self._check_conversion(res, page, contact_page, category, add)
+            if country.upper() == bulgaria.COUNTRY:
+                self._check_bulgaria(res, page, contact_page, home, add)
         if "BROKEN_LINKS" in wanted and not limited:
             self._check_links(res, page, verify, add)
 
@@ -345,14 +348,36 @@ class WebsiteAnalyzer:
         if not has_form:
             where = "the homepage or contact page" if contact else "the homepage (no contact page link found)"
             add("NO_CONTACT_FORM", f"No contact form was found on {where}; visitors must call or e-mail.")
-        if BOOKING_CATEGORIES.search(category or ""):
+        if BOOKING_CATEGORIES.search(category or "") or bulgaria.BOOKING_CATEGORIES.search(category or ""):
             hay = " ".join(" ".join([p.text[:50_000], " ".join(h for h, _ in p.links), " ".join(p.iframe_srcs),
                                      " ".join(p.script_srcs)]) for p in pages)
-            booking = bool(BOOKING_RE.search(hay))
+            booking = bool(BOOKING_RE.search(hay) or bulgaria.BOOKING_RE.search(hay))
             res.facts["online_booking"] = booking
             if not booking:
                 add("NO_ONLINE_BOOKING", f"No online booking or reservation option was found, which customers "
                                          f"commonly expect from a {category.lower()}.")
+
+    def _check_bulgaria(self, res, page: PageInfo, contact: PageInfo | None, home: FetchResult, add):
+        pages = [page] + ([contact] if contact else [])
+        text = "\n".join(p.text for p in pages)
+        m = re.search(r"charset=[\"']?([\w-]+)", home.headers.get("content-type", "") + home.text()[:3000], re.I)
+        if text.count("�") > max(20, len(text) // 50):  # undecodable: never claim something is missing
+            res.facts["bulgaria"] = ["not checked: page text could not be decoded"]
+            return
+        found = bulgaria.page_findings(text, [lnk for p in pages for lnk in p.links], m.group(1) if m else "")
+        res.facts["bulgaria"] = sorted(found)
+        msgs = {
+            "PRICES_IN_BGN": "Prices are shown only in leva ({examples}); since 8 Aug 2026 prices in Bulgaria must "
+                             "be shown in euro.",
+            "MISSING_COMPANY_INFO": "No company register details (ЕИК/БУЛСТАТ or legal form) were found on the "
+                                    "homepage or contact page (ЗЕТ чл. 4 requires them).",
+            "NO_PRIVACY_POLICY": "No link to a privacy or cookie policy was found (GDPR).",
+            "OUTDATED_DESIGN": "The site still uses the legacy windows-1251 encoding, a sign of an old build.",
+        }
+        for code, facts in found.items():
+            if code == "OUTDATED_DESIGN" and any(f.code == code for f in res.findings):
+                continue
+            add(code, msgs[code].format(examples=", ".join(facts.get("examples", []))), **facts)
 
     def _check_links(self, res, page: PageInfo, verify: bool, add):
         seen, candidates = {res.final_url.rstrip("/")}, []

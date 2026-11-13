@@ -16,7 +16,7 @@ def finding(code):
 def test_task_input_defaults_and_normalisation():
     inp = TaskInput.parse({"location": {"city": " Plovdiv ", "country_code": "bg"}})
     assert (inp.location.city, inp.location.country_code, inp.location.radius_km) == ("Plovdiv", "BG", 10)
-    assert (inp.categories, inp.max_businesses, inp.checks, inp.min_score, inp.language) == ([], 25, [], 50, "en")
+    assert (inp.categories, inp.max_businesses, inp.checks, inp.min_score, inp.language) == ([], 25, [], 50, "auto")
     inp = TaskInput.parse({"location": {"city": "A", "country_code": "DE", "radius_km": 500}, "min_score": 0,
                            "max_businesses": 999, "checks": ["no_https"]})
     assert inp.location.radius_km == 100 and inp.min_score == 0 and inp.max_businesses == 200
@@ -30,7 +30,8 @@ def test_problem_catalog_matches_contract_vocabulary():
                 "OUTDATED_CMS", "OUTDATED_DESIGN", "NO_ONLINE_BOOKING", "NO_CONTACT_FORM", "POOR_SEO", "MISSING_META",
                 "ACCESSIBILITY_ISSUES", "NO_ANALYTICS", "SECURITY_HEADERS_MISSING", "NO_GOOGLE_BUSINESS_PROFILE"}
     added = {"WEBSITE_UNREACHABLE", "NO_HTTPS_REDIRECT", "SSL_INVALID_CERTIFICATE", "SSL_EXPIRING_SOON",
-             "MIXED_CONTENT"}
+             "MIXED_CONTENT", "SOCIAL_MEDIA_ONLY", "FREE_SUBDOMAIN", "PRICES_IN_BGN", "MISSING_COMPANY_INFO",
+             "NO_PRIVACY_POLICY"}
     assert ALL_CODES == contract | added
     assert all(s.severity in ("LOW", "MEDIUM", "HIGH") and s.weight > 0 for s in PROBLEMS.values())
 
@@ -67,6 +68,8 @@ def test_scoring_is_deterministic_and_explained():
     every = [finding(c) for c in ALL_CODES]
     assert score_lead(every, contact, min_score=50).score == NEED_CAP + 10
     assert score_lead([finding("NO_WEBSITE")], None, min_score=50).score == 50   # 60 - 10 (no e-mail)
+    unreachable = score_lead([finding("NO_WEBSITE")], None, min_score=50, has_phone=False)
+    assert (unreachable.score, unreachable.status) == (30, "DISQUALIFIED")   # 60 - 30: nobody to contact
     assert score_lead([], None, min_score=0).score == 0
 
 
@@ -95,3 +98,30 @@ def test_settings_from_env():
                            "LLM_SERVER_FALLBACK": "false", "BRIEF_CURRENCY": "usd"})
     assert s.llm_model == DEFAULT_LLM_MODEL and s.batch_size == 3 and s.currency == "USD"
     assert s.llm_server_fallback is False and s.crawler.user_agent == "LocalLeadsBot/0.1 (+https://me.test/bot)"
+
+
+def test_prospect_rank_puts_reachable_businesses_without_a_site_first():
+    from local_leads.handler import prospect_rank
+    from local_leads.models import DiscoveredBusiness
+
+    def b(name, website="", phone="", email=""):
+        return DiscoveredBusiness(provider="osm", provider_id=name, name=name, website=website, phone=phone, email=email)
+    found = [b("unreachable"), b("site", website="https://x.test", phone="1"), b("call-no-site", phone="1"),
+             b("mail-no-site", email="info@y.test")]
+    assert [x.name for x in sorted(found, key=prospect_rank)] == ["call-no-site", "mail-no-site", "site", "unreachable"]
+
+
+def test_market_language_and_price_follow_the_business_country():
+    from local_leads.market import market_for, round_price
+    from local_leads.models import TaskInput
+
+    inp = TaskInput.parse({"location": {"city": "Plovdiv", "country_code": "BG"}})
+    assert inp.language_for("BG") == "bg" and inp.language_for("DE") == "de" and inp.language_for("") == "bg"
+    assert TaskInput.parse({"location": {"city": "X", "country_code": "BG"}, "language": "en"}).language_for("BG") == "en"
+    bg, de = market_for("BG"), market_for("de")
+    assert (bg.currency, de.currency, market_for("GB").currency, market_for("ZZ").currency) == ("EUR", "EUR", "GBP", "EUR")
+    new_site = build_estimate([finding("NO_WEBSITE")], hourly_rate=bg.hourly_rate, currency=bg.currency)
+    assert 800 <= new_site.budget_min < new_site.budget_max <= 1800    # typical Bulgarian small-business site
+    de_site = build_estimate([finding("NO_WEBSITE")], hourly_rate=de.hourly_rate, currency=de.currency)
+    assert de_site.budget_min > 2 * new_site.budget_min
+    assert round_price(1234) == 1250 and round_price(456_789) == 460_000

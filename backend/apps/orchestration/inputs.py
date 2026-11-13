@@ -64,7 +64,8 @@ class LeadDiscoveryInput(serializers.Serializer):
     max_businesses = serializers.IntegerField(min_value=1, max_value=200, default=25)
     checks = serializers.ListField(child=serializers.CharField(max_length=60), required=False, default=list)
     min_score = serializers.IntegerField(min_value=0, max_value=100, default=50)
-    language = serializers.CharField(**LANG)
+    # "auto" = outreach in the local language of each business's country (Agent 2 market.py)
+    language = serializers.CharField(max_length=10, default="auto")
     notes = serializers.CharField(max_length=2000, required=False, allow_blank=True, default="")
 
 

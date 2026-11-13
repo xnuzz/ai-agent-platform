@@ -4,13 +4,14 @@ Rules (all traceable to problems.py):
 - NO_WEBSITE -> new site; WEBSITE_UNREACHABLE -> relaunch;
 - >=2 rebuild triggers (mobile / design / CMS) or >=6 distinct problems -> rebuild (covers most fixes);
 - otherwise one fix item per problem.
-Plus project management/QA (15 %, min 2 h). Budget = hours x hourly rate, rounded to 50.
+Plus project management/QA (15 %, min 2 h). Budget = hours x local market hourly rate (market.py), rounded
+up to a quote-like number.
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 
+from .market import round_price
 from .models import Finding
 from .problems import REBUILD_TRIGGERS, spec
 
@@ -36,10 +37,6 @@ class Estimate:
                 "budget": {"min": self.budget_min, "max": self.budget_max, "currency": self.currency}}
 
 
-def _round50(x: float) -> float:
-    return float(int(math.ceil(x / 50.0)) * 50)
-
-
 def build_estimate(findings: list[Finding], *, hourly_rate: float, currency: str = "EUR", cms: str = ""
                    ) -> Estimate:
     codes = list(dict.fromkeys(f.code for f in findings))
@@ -51,9 +48,10 @@ def build_estimate(findings: list[Finding], *, hourly_rate: float, currency: str
             items.append((item, hours))
         tech.extend(t for t in stack if t not in tech)
 
-    if "NO_WEBSITE" in codes:
+    if "NO_WEBSITE" in codes or "SOCIAL_MEDIA_ONLY" in codes:
         approach = "new_site"
-        add(spec("NO_WEBSITE").scope_item, spec("NO_WEBSITE").hours, spec("NO_WEBSITE").tech)
+        s = spec("NO_WEBSITE" if "NO_WEBSITE" in codes else "SOCIAL_MEDIA_ONLY")
+        add(s.scope_item, s.hours, s.tech)
         add("Contact form and click-to-call", (2, 4))
     elif "WEBSITE_UNREACHABLE" in codes:
         approach = "relaunch"
@@ -81,5 +79,5 @@ def build_estimate(findings: list[Finding], *, hourly_rate: float, currency: str
     items.append(("Project management, testing and handover", pm))
     hmin, hmax = hmin + pm[0], hmax + pm[1]
     return Estimate(approach=approach, scope_items=[i for i, _ in items], tech_stack=tech, hours_min=hmin,
-                    hours_max=hmax, budget_min=_round50(hmin * hourly_rate), budget_max=_round50(hmax * hourly_rate),
+                    hours_max=hmax, budget_min=round_price(hmin * hourly_rate), budget_max=round_price(hmax * hourly_rate),
                     currency=(currency or "EUR").upper()[:3])

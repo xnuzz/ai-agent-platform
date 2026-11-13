@@ -4,6 +4,59 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-11 — Team 2 — Agent 2: Bulgaria market pack
+
+**Implemented** (`local_leads/bulgaria.py` + wiring): small-business filter (chains/brands out), Bulgarian category words and 18 default BG niches, owner-run mobile ranking, +359 phone normalisation; new codes `SOCIAL_MEDIA_ONLY`, `FREE_SUBDOMAIN`, BG-only `PRICES_IN_BGN` (euro-only since 2026-08-08), `MISSING_COMPANY_INFO` (ЗЕТ чл. 4), `NO_PRIVACY_POLICY`; windows-1251 detection and `<meta>` charset decoding; Bulgarian booking words; ЗЕТ чл. 6 compliance (subject "Търговско предложение:", "без ДДС", КЗП register note, free-mail → UNKNOWN); BG sales notes in briefs (recurring revenue, season timing, euro update); Facebook pages no longer deduped by domain nor sent as the business website; OSM categories grouped 4 per query.
+**Research (sources in the session):** euro adoption timeline (evroto.bg, BTA, Sofia Globe), ЗЕТ current text (ДВ бр. 55/2026) чл. 4 and чл. 6, NSI/Eurostat website adoption (~half of small enterprises).
+**Review:** independent code review found 16 issues (4 HIGH: lost/merged Facebook-only leads, false legal findings on windows-1251 sites, missed Bulgarian privacy wording, free-mail treated as legal entity); all HIGH/MEDIUM and most LOW fixed with regression tests.
+**Real checks (not mocked):** BG checks run against 5 live Bulgarian sites from earlier runs; findings verified against raw HTML (no false company-info claim on a site that shows "ЕООД"). **Live discovery run in Nessebar failed:** public Overpass rate-limited / unreachable after a day of testing (429 + connection timeouts) - grouping added to reduce query count; re-run when Overpass is reachable or use Google Places.
+**Tests:** Agent 2: 72 passed, 1 known Windows timing flake. Backend unchanged (problem codes are free-form).
+**Not done:** КЗП register is not machine-checked (no API used); subject prefix enforced agent-side only (backend does not validate) - request to Team 3 below.
+
+---
+
+## 2026-11-11 — Team 2 — Agent 2 outreach: local language, sales playbook, market pricing
+
+**Implemented**
+- Outreach language follows the business's country (`language: "auto"`, new default in the agent, the backend `LeadDiscoveryInput` and the Local Business Finder form; explicit codes still win). Native templates for en / bg / de (formal address); LLM writes any language.
+- Sales playbook in the LLM system prompts (personal hook from a measured fact → business impact → one clear offer with local price → one low-friction question; no invented claims/urgency). Templates rewritten to the same structure with per-problem impact lines in all three languages; briefs end with call talking points.
+- `market.py`: per-country language, currency and 2026 market hourly rate (40 countries; BG EUR 25, DE EUR 70, GB GBP 50, US USD 75 …), quote-like rounding. Replaces the flat EUR 60/h; `BRIEF_HOURLY_RATE` / `BRIEF_CURRENCY` still override.
+
+**Real run (not mocked):** test workspace, Plovdiv, hotels / dentists / lawyers, 15 businesses → 8 leads, 4 qualified, 5 outreach drafts all in Bulgarian, budgets EUR 250-2,000 by scope. Found and fixed: a Latin city name ("Plovdiv") inside Bulgarian text.
+**Files:** `local_leads/{market.py (new),briefs,writing,handler,models,config,discovery/google_places}.py`, `local_leads/llm/templates.py`, README; `backend/apps/orchestration/inputs.py` (default `auto` for lead discovery only); `docs/AGENT_2_CONTRACT.md`; `frontend/src/features/localFinder/catalog.ts`, `components/localFinder/ResearchControls.vue`; tests in `tests/agent_2/`. `docs/openapi.yaml` unchanged (task input is a free-form JSON field).
+**Tests:** Agent 2: 64 passed, 1 known Windows timing flake. Backend `test_orchestration.py` + `test_ingestion.py` pass (in a container against Postgres). `npm run build` passes. Playwright not run.
+**Not done:** LLM path not run for real (no key); market rates are a static, sourced estimate.
+
+---
+
+## 2026-11-11 — Team 2 + Local Business Finder — high-potential first, city auto-zoom, faster first results
+
+**Implemented**
+- Agent 2: discovers 2× `max_businesses`, ranks before cutting (reachable without a website > reachable with a website > unreachable); first batch is 3 businesses so leads appear on the map early; OSM category queries run 2 in parallel (public Overpass per-client limit); `CRAWLER_CONCURRENCY` default 4 → 8 (politeness stays per host).
+- Local Business Finder: the research drawer geocodes the city with OSM Nominatim (on city/country change and at submit, 5 s timeout, fails silently) → map flies to the city, search circle drawn, task input gets `latitude/longitude` (map frames the city as soon as the run starts; agent skips its own geocoding). A centre picked on the map is never overridden. Empty-state card no longer covers the map while a run is queued/running.
+
+**Real run (browser, not mocked):** test workspace, Plovdiv 3 km, dentist / hair salon / auto repair, 12 businesses: map zoomed to Plovdiv on entering the city; discovery 99 s (Overpass slow), first 3 leads on the map at 137 s with toasts, completed at 175 s, 8 leads.
+**Files:** `agents/agent_2_local_leads/local_leads/{handler,config,discovery/osm}.py`, README; `frontend/src/components/localFinder/{ResearchControls,BusinessMap}.vue`; tests `tests/agent_2/{test_agent2_discovery,test_agent2_scoring_briefs}.py`. **API/DB/deps:** none (Nominatim is called from the browser; a CSP must allow `nominatim.openstreetmap.org` in `connect-src`).
+**Tests:** `npm run build` passes; Agent 2 unit tests pass (except the known Windows timing flake). Playwright **not run** (would share the running backend/agent).
+**Limits:** discovery speed is bound by public Overpass (often 30–60 s per query); Google Places would be much faster.
+
+---
+
+## 2026-11-11 — Team 2 — Agent 2: real OSM research, website lookup, contactability
+
+**Implemented**
+- OSM discovery: one Overpass query per category (a busy public instance times out on a big union; one failed category no longer loses the run), results interleaved across categories, comma-separated `OSM_OVERPASS_URL` mirrors tried in order on 429/5xx/timeout, HTTP timeout 90 s.
+- `analyzer/sitefinder.py` + `FIND_MISSING_WEBSITES` (default on): businesses without a listed website get a few guessed domains (`<name>.<ccTLD>`, `.com`, hyphenated; Cyrillic transliterated); a site is accepted only if the page shows the name and the phone or city. Found sites are scanned like listed ones; `source_data.website_found` records how.
+- Scoring: no e-mail and no phone → −30 (was −10). Unreachable no-website businesses become DISQUALIFIED instead of flooding approvals.
+
+**Real run (not mocked):** Plovdiv, BG, dentists + hair salons, 10 businesses → task COMPLETED, 6 leads stored, 0 qualified (4 with no website and no contact data, 2 sites with minor issues). Probe of 60 OSM businesses: 43 without website tag, 38 without phone or e-mail.
+**Files:** `local_leads/{discovery/osm.py,analyzer/sitefinder.py,handler.py,scoring.py,config.py}`, `README.md`, `tests/agent_2/{test_agent2_discovery,test_agent2_sitefinder,test_agent2_scoring_briefs,test_agent2_handler,test_agent2_live_contract}.py`. **API/DB/deps:** none.
+**Tests:** `tests/agent_2` (excluding the live-server contract test, which needs Postgres): 61 passed, 1 failed (`test_per_host_rate_limit`, timing flake on Windows, fails on the unchanged code too).
+**Not done / blocked:** Google Places not run for real (no key); LLM not run for real (no key; template text used). Domain guessing found no sites in the real sample.
+**Next:** run with `DISCOVERY_PROVIDER=google_places` + key; optional web-search lookup for missing websites.
+
+---
+
 ## 2026-11-11 — Team 3 — Celery worker/beat crash fix
 
 - `backend/requirements.txt`: added `packaging>=24`. `kombu.transport.redis` imports it without declaring it, so `worker` and `beat` exited on start in a fresh `python:3.13-slim` image (`ModuleNotFoundError: No module named 'packaging'`).

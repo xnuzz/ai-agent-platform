@@ -13,6 +13,7 @@ import logging
 
 import httpx
 
+from .. import bulgaria
 from ..models import DiscoveredBusiness, TaskInput
 from .base import DiscoveryError, DiscoveryProvider, DiscoveryUnavailable, categories_for, within_radius
 
@@ -65,7 +66,7 @@ class GooglePlacesProvider(DiscoveryProvider):
             if len(out) >= limit:
                 break
             query = f"{cat} in {loc.label}"
-            body: dict = {"textQuery": query, "pageSize": min(20, per_cat), "languageCode": inp.language,
+            body: dict = {"textQuery": query, "pageSize": min(20, per_cat), "languageCode": inp.language_for(inp.location.country_code),
                           "regionCode": loc.country_code}
             if loc.latitude is not None and loc.longitude is not None:
                 body["locationBias"] = {"circle": {
@@ -96,7 +97,7 @@ class GooglePlacesProvider(DiscoveryProvider):
         get = lambda t, k="longText": (comps.get(t) or {}).get(k, "")  # noqa: E731
         street = " ".join(x for x in (get("route"), get("street_number")) if x)
         name = (p.get("displayName") or {}).get("text", "").strip()
-        if not name:
+        if not name or bulgaria.is_chain(name):  # chains are not small-business clients
             return None
         loc = p.get("location") or {}
         return DiscoveredBusiness(

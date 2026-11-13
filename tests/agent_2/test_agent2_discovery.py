@@ -86,8 +86,13 @@ def test_osm_geocodes_then_queries_overpass():
         if "nominatim" in request.url.host:
             return httpx.Response(200, json=[{"lat": "42.1354", "lon": "24.7453"}])
         query = parse_qs(request.content.decode())["data"][0]
-        assert '["amenity"="dentist"]' in query and "around:3000,42.1354,24.7453" in query
-        assert '["name"~"Pottery studio",i]' in query
+        assert "around:3000,42.1354,24.7453" in query
+        if request.url.host == "overpass-busy.test":
+            return httpx.Response(504)  # first mirror busy -> next mirror
+        if '["name"~"Pottery studio",i]' in query:  # groups of 4 categories; a failed group keeps the rest
+            assert '["amenity"="dentist"]' not in query
+            return httpx.Response(429)
+        assert '["amenity"="dentist"]' in query
         return httpx.Response(200, json={"elements": [
             {"type": "node", "id": 1, "lat": 42.1, "lon": 24.7,
              "tags": {"name": "Smile", "amenity": "dentist", "website": "https://smile.test",
@@ -95,10 +100,10 @@ def test_osm_geocodes_then_queries_overpass():
             {"type": "way", "id": 2, "center": {"lat": 42.2, "lon": 24.8}, "tags": {"amenity": "dentist"}},
         ]})
 
-    provider = OSMProvider(user_agent="LocalLeadsBot/0.1 (+https://bot.test)", overpass_url="https://overpass.test/i",
+    provider = OSMProvider(user_agent="LocalLeadsBot/0.1 (+https://bot.test)", overpass_url="https://overpass-busy.test/i, https://overpass.test/i",
                            nominatim_url="https://nominatim.test/search", transport=httpx.MockTransport(handler))
     inp = TaskInput.parse({"location": {"city": "Plovdiv", "country_code": "BG", "radius_km": 3},
-                           "categories": ["Dentist", "Pottery studio"]})
+                           "categories": ["Dentist", "Bakery", "Florist", "Plumber", "Pottery studio"]})
     out = provider.discover(inp, limit=5)
     assert len(out) == 1  # unnamed element skipped
     b = out[0]
@@ -106,6 +111,17 @@ def test_osm_geocodes_then_queries_overpass():
     assert b.attribution == ATTRIBUTION and b.listing_url == "https://www.openstreetmap.org/node/1"
     assert parse_qs(calls[0].url.query.decode())["countrycodes"] == ["bg"]
     assert all(c.headers["user-agent"].startswith("LocalLeadsBot/") for c in calls)
+    assert sorted(c.url.host for c in calls[1:]) == ["overpass-busy.test"] * 2 + ["overpass.test"] * 2  # parallel
+
+
+def test_osm_all_categories_unavailable_raises():
+    provider = OSMProvider(user_agent="LocalLeadsBot/0.1 (+https://bot.test)", overpass_url="https://overpass.test/i",
+                           nominatim_url="https://nominatim.test/search",
+                           transport=httpx.MockTransport(lambda r: httpx.Response(504)))
+    inp = TaskInput.parse({"location": {"city": "Plovdiv", "country_code": "BG", "latitude": 42.1, "longitude": 24.7},
+                           "categories": ["Dentist"]})
+    with pytest.raises(DiscoveryUnavailable):
+        provider.discover(inp, limit=5)
 
 
 def test_fake_provider_filters_and_file(tmp_path):

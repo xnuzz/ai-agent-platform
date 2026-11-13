@@ -10,6 +10,7 @@ Crawler ethics (docs/AGENT_2_CONTRACT.md §Compliance notes, README §Crawler et
 from __future__ import annotations
 
 import logging
+import re
 import ssl
 import threading
 import time
@@ -53,11 +54,14 @@ class FetchResult:
         return self.content_type in ("text/html", "application/xhtml+xml", "")
 
     def text(self) -> str:
-        charset = "utf-8"
+        charset = ""
         for part in self.headers.get("content-type", "").split(";")[1:]:
             k, _, v = part.strip().partition("=")
             if k.lower() == "charset" and v:
                 charset = v.strip("\"' ")
+        if not charset:  # old sites (e.g. windows-1251) often declare it only in <meta>
+            m = re.search(rb"<meta[^>]+charset=[\"']?([\w-]+)", self.body[:4096], re.I)
+            charset = m.group(1).decode("ascii", "ignore") if m else "utf-8"
         try:
             return self.body.decode(charset, errors="replace")
         except LookupError:
@@ -94,7 +98,7 @@ def classify_tls_error(message: str) -> str:
 
 class PoliteFetcher:
     def __init__(self, settings: CrawlerSettings, *, transport: httpx.BaseTransport | None = None,
-                 sleep=time.sleep, clock=time.monotonic):
+                 sleep=time.sleep, clock=time.perf_counter):
         self.settings = settings
         self._transport = transport
         self._sleep, self._clock = sleep, clock
@@ -137,12 +141,13 @@ class PoliteFetcher:
     def _wait_turn(self, url: str, interval: float) -> None:
         host = (urlsplit(url).hostname or "").lower()
         with self._host_lock(host):
-            now = self._clock()
-            wait = self._host_next.get(host, 0.0) - now
+            slot = self._host_next.get(host, 0.0)
+            wait = slot - self._clock()
             if wait > 0:
                 self._sleep(wait)
-                now = self._clock()
-            self._host_next[host] = now + interval
+            # Schedule from the reserved slot, not a re-read clock: a coarse or lagging clock
+            # (time.monotonic is ~15.6 ms on Windows) would otherwise let the next request in early.
+            self._host_next[host] = max(slot, self._clock()) + interval
 
     def robots(self, url: str) -> _Robots:
         origin = origin_of(url)
@@ -208,13 +213,14 @@ class PoliteFetcher:
                 result.final_url = current
                 result.error, result.error_kind = f"disallowed by robots.txt: {current}", "robots_disallowed"
                 return result
+            client = self._client(verify)  # build (TLS context load) before taking the slot, not inside it
             self._wait_turn(current, interval if interval is not None else self.host_interval(current))
             started = self._clock()
             deadline = started + s.connect_timeout + 2 * s.read_timeout
             try:
                 with self._lock:
                     self.request_count += 1
-                with self._client(verify).stream(method, current) as resp:
+                with client.stream(method, current) as resp:
                     body, truncated = bytearray(), False
                     if method != "HEAD" and limit > 0 and not resp.is_redirect:
                         for chunk in resp.iter_bytes():

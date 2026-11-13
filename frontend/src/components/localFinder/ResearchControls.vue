@@ -17,9 +17,28 @@ const form = ref(blank())
 const categoryDraft = ref('')
 const error = ref<string | null>(null)
 const busy = ref(false)
+let geocoded: [number, number] | null = null // last centre set from the city; any other centre was picked by the user
+
+/** City -> [lng, lat] via OSM Nominatim (low volume: on blur / submit only). Fails silently: the agent geocodes too. */
+async function geocode(): Promise<[number, number] | null> {
+  const f = form.value
+  if (!f.city.trim()) return null
+  const q = new URLSearchParams({ city: f.city.trim(), countrycodes: f.country.toLowerCase(), format: 'jsonv2', limit: '1' })
+  if (f.region.trim()) q.set('state', f.region.trim())
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?${q}`, { signal: AbortSignal.timeout(5000) })
+    const [hit] = r.ok ? await r.json() : []
+    return hit ? [Number(hit.lon), Number(hit.lat)] : null
+  } catch { return null }
+}
+async function centreOnCity() {
+  if (store.draftCenter && String(store.draftCenter) !== String(geocoded)) return // never override a centre the user picked on the map
+  const c = await geocode()
+  if (c) store.draftCenter = geocoded = c // the map flies there (BusinessMap watches draftCenter)
+}
 
 function blank() {
-  return { country: 'BG', city: '', region: '', neighborhood: '', categories: [] as string[], services: [] as string[], minScore: 50, max: 25, language: 'en', notes: '' }
+  return { country: 'BG', city: '', region: '', neighborhood: '', categories: [] as string[], services: [] as string[], minScore: 50, max: 25, language: 'auto', notes: '' }
 }
 
 // Prefill from the latest run each time the drawer opens (fast re-runs with a tweak).
@@ -30,13 +49,14 @@ watch(() => store.configOpen, async (open) => {
   if (last) {
     Object.assign(f, {
       country: last.location.country_code, city: last.location.city, region: last.location.region ?? '', categories: [...(last.categories ?? [])],
-      minScore: last.min_score ?? 50, max: last.max_businesses ?? 25, language: last.language ?? 'en',
+      minScore: last.min_score ?? 50, max: last.max_businesses ?? 25, language: last.language ?? 'auto',
       services: SERVICES.filter((s) => s.checks.some((c) => last.checks?.includes(c))).map((s) => s.id),
     })
     store.draftRadiusKm = last.location.radius_km ?? 10
     store.draftCenter = last.location.latitude != null && last.location.longitude != null ? [last.location.longitude, last.location.latitude] : null
   }
   form.value = f
+  geocoded = store.draftCenter ? [...store.draftCenter] : null // a prefilled centre follows a new city
   error.value = null
   await nextTick()
   panel.value?.querySelector<HTMLElement>('select, input')?.focus()
@@ -69,8 +89,9 @@ async function start() {
     categories: f.categories, max_businesses: f.max, min_score: f.minScore, language: f.language, notes: notes.value,
     checks: [...new Set(SERVICES.filter((s) => f.services.includes(s.id)).flatMap((s) => s.checks))],
   }
-  if (store.draftCenter) Object.assign(input.location, { longitude: store.draftCenter[0], latitude: store.draftCenter[1] })
   busy.value = true
+  if (!store.draftCenter) await centreOnCity() // coordinates let the map zoom to the city and save the agent a lookup
+  if (store.draftCenter) Object.assign(input.location, { longitude: store.draftCenter[0], latitude: store.draftCenter[1] })
   try {
     const task = await api.startDiscovery(input)
     store.configOpen = false
@@ -104,10 +125,10 @@ async function start() {
           <legend class="mb-2 text-xs font-semibold text-ink">Area</legend>
           <div class="grid grid-cols-2 gap-3">
             <div><label class="label" for="cfg-country">Country</label>
-              <select id="cfg-country" v-model="form.country" class="input" required>
+              <select id="cfg-country" v-model="form.country" class="input" required @change="centreOnCity">
                 <option v-for="c in countries" :key="c.code" :value="c.code">{{ c.name }}</option>
               </select></div>
-            <div><label class="label" for="cfg-city">City</label><input id="cfg-city" v-model="form.city" class="input" required maxlength="120" placeholder="Sofia" /></div>
+            <div><label class="label" for="cfg-city">City</label><input id="cfg-city" v-model="form.city" class="input" required maxlength="120" placeholder="Sofia" @change="centreOnCity" /></div>
             <div><label class="label" for="cfg-region">Region</label><input id="cfg-region" v-model="form.region" class="input" maxlength="120" placeholder="Optional" /></div>
             <div><label class="label" for="cfg-hood">Neighbourhood</label><input id="cfg-hood" v-model="form.neighborhood" class="input" maxlength="120" placeholder="e.g. Lozenets" /></div>
           </div>
@@ -115,7 +136,7 @@ async function start() {
             <div class="flex items-center justify-between gap-2">
               <div class="text-xs">
                 <div class="font-medium text-ink">Search centre</div>
-                <div class="text-silver" data-testid="draft-center">{{ store.draftCenter ? `${store.draftCenter[1].toFixed(5)}, ${store.draftCenter[0].toFixed(5)}` : 'City centre (resolved by the agent)' }}</div>
+                <div class="text-silver" data-testid="draft-center">{{ store.draftCenter ? `${store.draftCenter[1].toFixed(5)}, ${store.draftCenter[0].toFixed(5)}` : 'City centre (found when you enter the city)' }}</div>
               </div>
               <div class="flex gap-1.5">
                 <button v-if="store.draftCenter" type="button" class="btn-secondary px-2 py-1 text-xs" @click="store.draftCenter = null">Clear</button>

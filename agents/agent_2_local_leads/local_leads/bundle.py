@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 from platform_sdk import new_bundle
 
 from .analyzer.website import ScanResult, normalize_url
+from .bulgaria import is_social_only
 from .contacts import EMAIL_RE
 from .models import DiscoveredBusiness, Finding
 
@@ -120,7 +121,9 @@ class BatchBundle:
     def business(self, b: DiscoveredBusiness, refs: Refs, *, email: str, evidence_refs: list[str]) -> None:
         cc = (b.country_code or "").strip().upper()
         self.data["businesses"].append({
-            "ref": refs.business, "name": clip(b.name, 300), "website": clean_url(b.website),
+            "ref": refs.business, "name": clip(b.name, 300),
+            # a Facebook/marketplace page is not the business's site (backend dedupes businesses by site domain)
+            "website": "" if is_social_only(b.website) else clean_url(b.website),
             "email": clean_email(email), "phone": clip(b.phone, 50),
             "address": {"line1": clip(b.address_line1, 300), "city": clip(b.city, 120),
                         "region": clip(b.region, 120), "postal_code": clip(b.postal_code, 20),

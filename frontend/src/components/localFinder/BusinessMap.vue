@@ -380,7 +380,7 @@ watch(() => Object.keys(store.fresh), (ids, old) => {
       <span class="flex items-center gap-2"><span class="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-transparent" />Loading businesses…</span>
     </div>
     <div v-else-if="failed" class="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted">{{ failed }}</div>
-    <div v-else-if="!store.scopedRows.length && store.agentState !== 'SCANNING' && !store.configOpen" class="pointer-events-none absolute inset-0 grid place-items-center p-6">
+    <div v-else-if="!store.scopedRows.length && !store.activeTask && !store.configOpen" class="pointer-events-none absolute inset-0 grid place-items-center p-6">
       <div class="glass-pop pointer-events-auto max-w-sm rounded-[var(--radius-lg)] p-6 text-center">
         <div class="text-sm font-semibold text-white">No businesses discovered yet</div>
         <p class="mt-1 text-xs text-muted">Choose a city and categories, then start Agent 2. Discoveries appear here live.</p>

@@ -26,7 +26,7 @@ Input:
 | `max_businesses` | 1–200 | 25 |
 | `checks` | [problem code] to run | `[]` = all |
 | `min_score` | 0–100: qualify threshold | 50 |
-| `language` | str | `en` |
+| `language` | str: `auto` = local language of each business's country (`market.py`); an ISO code forces that language | `auto` |
 | `notes` | str | `""` |
 
 Allowed bundle sections: `evidence`, `businesses`, `leads`, `project_briefs`, `campaigns`.
@@ -42,6 +42,7 @@ Expectations:
 ## Problem codes (recommended vocabulary; any `UPPER_SNAKE` code is accepted)
 `NO_WEBSITE`, `NO_HTTPS`, `SSL_EXPIRED`, `SLOW_PAGE_LOAD`, `NOT_MOBILE_FRIENDLY`, `BROKEN_LINKS`, `OUTDATED_CMS`, `OUTDATED_DESIGN`, `NO_ONLINE_BOOKING`, `NO_CONTACT_FORM`, `POOR_SEO`, `MISSING_META`, `ACCESSIBILITY_ISSUES`, `NO_ANALYTICS`, `SECURITY_HEADERS_MISSING`, `NO_GOOGLE_BUSINESS_PROFILE`.
 Added by Team 2 (2026-11-09, additive): `WEBSITE_UNREACHABLE` (listed site does not load: DNS/connect error, 404/410, 5xx), `NO_HTTPS_REDIRECT` (HTTPS works but HTTP is not redirected), `SSL_INVALID_CERTIFICATE` (certificate not trusted: self-signed, unknown issuer, hostname mismatch), `SSL_EXPIRING_SOON` (valid certificate expiring within 14 days), `MIXED_CONTENT` (HTTPS page loads `http://` resources).
+Added by Team 2 (2026-11-11, additive, Bulgaria market pack): `SOCIAL_MEDIA_ONLY` (listing points only to a Facebook/Instagram/marketplace page; no own site found), `FREE_SUBDOMAIN` (site on a free host such as `*.hit.bg`, `*.wixsite.com`), and for businesses in BG only: `PRICES_IN_BGN` (prices in "лв." without euro; euro-only display since 2026-08-08), `MISSING_COMPANY_INFO` (no ЕИК/БУЛСТАТ, VAT no. or legal form found — ЗЕТ чл. 4), `NO_PRIVACY_POLICY` (no privacy/cookie policy link). New `WEBSITE_SCAN` fact key: `bulgaria` (list of BG codes found).
 Agent 2's definitions, detection rules, severities and score weights: `agents/agent_2_local_leads/README.md` and `local_leads/problems.py`.
 Adding a code: append here + INTEGRATION_STATUS "Contract changes" (frontend shows codes verbatim).
 

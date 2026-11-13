@@ -17,13 +17,16 @@ from urllib.parse import urlsplit
 
 from platform_sdk import PlatformError, RetryableError, TaskCancelled, TaskContext
 
+from . import bulgaria
 from .analyzer import ScanResult, WebsiteAnalyzer
+from .analyzer.sitefinder import find_website
 from .briefs import Estimate, build_estimate
 from .bundle import BatchBundle, Refs, clean_email, clean_url
 from .config import Settings
 from .contacts import ContactChoice, choose_contact
 from .discovery import DiscoveryProvider, DiscoveryUnavailable, build_discovery
 from .llm import LLMProvider, build_llm
+from .market import market_for
 from .models import DiscoveredBusiness, Finding, TaskInput
 from .problems import ALL_CODES, spec
 from .scoring import Assessment, score_lead
@@ -31,6 +34,30 @@ from .writing import Writer, Written
 
 logger = logging.getLogger("local_leads.handler")
 TASK_TYPE = "LOCAL_LEAD_DISCOVERY"
+OVERFETCH = 2       # discover 2x max_businesses, keep the best prospects
+FIRST_BATCH = 3
+
+
+def _subject(subject: str, country: str) -> str:
+    """BG (ЗЕТ чл. 6, ал. 1): unsolicited commercial e-mail must be recognisable as such on arrival."""
+    if country.upper() != bulgaria.COUNTRY or subject.lower().startswith(bulgaria.SUBJECT_PREFIX.lower()):
+        return subject
+    full = f"{bulgaria.SUBJECT_PREFIX}: {subject}"
+    return full if len(full) <= 120 else full[:119].rsplit(" ", 1)[0] + "…"
+
+
+def own_site(b: DiscoveredBusiness) -> bool:
+    """The listing points at the business's own site (not a Facebook/Instagram/marketplace page)."""
+    return bool(b.website) and not bulgaria.is_social_only(b.website)
+
+
+def prospect_rank(b: DiscoveredBusiness) -> tuple[int, int]:
+    """Pre-scan priority, lower = better: reachable without an own site > reachable with a site > unreachable;
+    within a tier, a listed mobile number (owner-run business, BG) comes first."""
+    reachable = bool(b.phone.strip() or b.email.strip())
+    tier = (1 if own_site(b) else 0) if reachable else 2
+    owner_line = b.country_code.upper() == bulgaria.COUNTRY and bulgaria.is_mobile(b.phone)
+    return tier, 0 if owner_line else 1
 
 
 @dataclass
@@ -83,17 +110,21 @@ class LocalLeadsAgent:
         ctx.progress(5, stage="DISCOVERING_BUSINESSES",
                      message=f"Searching {self.discovery.name} for businesses in {inp.location.label}")
         try:
-            found = self.discovery.discover(inp, limit=inp.max_businesses)
+            found = self.discovery.discover(inp, limit=inp.max_businesses * OVERFETCH)
         except DiscoveryUnavailable as exc:
             raise RetryableError(str(exc)) from exc
-        businesses = self._dedupe(found)[: inp.max_businesses]
+        businesses = sorted(self._dedupe(found), key=prospect_rank)[: inp.max_businesses]
         stats: Counter = Counter(businesses_found=len(businesses))
         ctx.progress(10, stage="DISCOVERING_BUSINESSES", message=f"Found {len(businesses)} businesses")
 
-        size = self.settings.batch_size
-        batches = [businesses[i:i + size] for i in range(0, len(businesses), size)]
+        # A small first batch puts the best prospects on the dashboard map within seconds of discovery.
+        size, head = self.settings.batch_size, min(FIRST_BATCH, self.settings.batch_size)
+        batches = [businesses[:head]] + [businesses[i:i + size] for i in range(head, len(businesses), size)]
+        batches = [b for b in batches if b]
+        offset = 0
         for n, batch in enumerate(batches):
-            self._run_batch(ctx, inp, wanted, batch, n, len(batches), len(businesses), stats)
+            self._run_batch(ctx, inp, wanted, batch, n, len(batches), len(businesses), stats, offset)
+            offset += len(batch)
 
         ctx.progress(100, stage="SUBMITTING", message="Done")
         return {
@@ -108,7 +139,7 @@ class LocalLeadsAgent:
         """One business per provider id and per website domain (the backend dedupes by domain too)."""
         seen_ids, seen_domains, out = set(), set(), []
         for b in found:
-            dom = _domain(b.website) if b.website else ""
+            dom = _domain(b.website) if own_site(b) else ""  # facebook.com/x and /y are different businesses
             if (b.provider, b.provider_id) in seen_ids or (dom and dom in seen_domains):
                 continue
             seen_ids.add((b.provider, b.provider_id))
@@ -119,11 +150,11 @@ class LocalLeadsAgent:
 
     # ================================================================== one batch
     def _run_batch(self, ctx, inp: TaskInput, wanted: set[str], batch: list[DiscoveredBusiness], n: int,
-                   n_batches: int, total: int, stats: Counter) -> None:
+                   n_batches: int, total: int, stats: Counter, offset: int = 0) -> None:
         span = 88 / n_batches
         base = 10 + n * span
         pct = lambda frac: min(99, int(base + span * frac))  # noqa: E731
-        first, last = n * self.settings.batch_size + 1, n * self.settings.batch_size + len(batch)
+        first, last = offset + 1, offset + len(batch)
         label = f"businesses {first}-{last} of {total}"
 
         # ---- scan websites (parallel; politeness is per host inside the fetcher)
@@ -155,14 +186,37 @@ class LocalLeadsAgent:
             raise
         self._count(stats, work, report)
 
+    def _find_missing_websites(self, batch: list[DiscoveredBusiness]) -> None:
+        """Listings often omit the site: look for it before treating a business as NO_WEBSITE."""
+        missing = [b for b in batch if not own_site(b)] if self.settings.find_missing_websites else []
+        if not missing:
+            return
+
+        def find(b: DiscoveredBusiness) -> None:
+            try:
+                url, proof = find_website(b, self.analyzer.fetcher)
+            except Exception:  # a failed lookup just keeps the listing as-is
+                logger.exception("website lookup failed for %s", b.name)
+                return
+            if url:
+                if b.website:  # keep the social page it replaced
+                    b.source_data["social_page"] = b.website
+                b.website = url
+                b.source_data["website_found"] = {"method": "domain_guess", "matched_on": proof}
+
+        with ThreadPoolExecutor(max_workers=self.settings.crawler.concurrency, thread_name_prefix="find") as pool:
+            list(pool.map(find, missing))
+
     def _scan_all(self, batch: list[DiscoveredBusiness], wanted: set[str]) -> dict[str, ScanResult]:
-        targets = [b for b in batch if clean_url(b.website)]   # malformed listing URLs are never requested
+        self._find_missing_websites(batch)
+        targets = [b for b in batch if clean_url(b.website) and own_site(b)]  # malformed URLs never requested
         if not targets:
             return {}
 
         def scan(b: DiscoveredBusiness) -> ScanResult:
             try:
-                return self.analyzer.analyze(clean_url(b.website), category=b.category, wanted=wanted)
+                return self.analyzer.analyze(clean_url(b.website), category=b.category, wanted=wanted,
+                                             country=b.country_code)
             except Exception as exc:  # noqa: BLE001 - one broken site must not fail the task
                 logger.exception("scan failed for %s", b.website)
                 return ScanResult(url=b.website, skipped_reason=f"scanner error: {type(exc).__name__}",
@@ -180,11 +234,24 @@ class LocalLeadsAgent:
                                     title=spec("NO_WEBSITE").title, url=b.listing_url,
                                     description=f"No website is listed for {b.name} in its "
                                                 f"{b.provider} listing.", facts={"listing": b.listing_url}))
+        elif b.website and not own_site(b) and wanted & {"NO_WEBSITE", "SOCIAL_MEDIA_ONLY"}:
+            findings.append(Finding(code="SOCIAL_MEDIA_ONLY", severity=spec("SOCIAL_MEDIA_ONLY").severity,
+                                    title=spec("SOCIAL_MEDIA_ONLY").title, url=b.website,
+                                    description=f"{b.name} lists only {bulgaria.host_of(b.website)} as its website; "
+                                                f"no own website was found.", facts={"listed": b.website}))
         elif scan is not None:
             findings.extend(f for f in scan.findings if f.code in wanted)
+            if scan.scanned and "FREE_SUBDOMAIN" in wanted and bulgaria.is_free_host(scan.final_url or b.website):
+                findings.append(Finding(code="FREE_SUBDOMAIN", severity=spec("FREE_SUBDOMAIN").severity,
+                                        title=spec("FREE_SUBDOMAIN").title, url=scan.final_url or b.website,
+                                        description=f"The site runs on the free subdomain "
+                                                    f"{bulgaria.host_of(scan.final_url or b.website)}, not on the "
+                                                    f"business's own domain.",
+                                        facts={"host": bulgaria.host_of(scan.final_url or b.website)}))
         candidates = [(b.email, f"{b.provider} listing")] if b.email else []
-        if scan is not None:
-            candidates += [(e, f"website {scan.final_url or scan.url}") for e in scan.emails]
+        if scan is not None:  # never the address of a portal / social platform
+            candidates += [(e, f"website {scan.final_url or scan.url}") for e in scan.emails
+                           if not bulgaria.is_social_only("http://" + e.split("@")[-1])]
         contact = choose_contact(candidates, business_name=b.name, website=b.website,
                                  country_code=b.country_code or inp.location.country_code)
         note = ""
@@ -192,7 +259,8 @@ class LocalLeadsAgent:
             note = f"Listed website value {b.website[:100]!r} is not a valid URL; not analysed."
         elif scan is not None and not scan.scanned and scan.skipped_reason and not findings:
             note = f"Website not analysed ({scan.skipped_reason})."
-        assessment = score_lead(findings, contact, min_score=inp.min_score, scan_note=note)
+        assessment = score_lead(findings, contact, min_score=inp.min_score, scan_note=note,
+                                has_phone=bool(b.phone.strip()))
         return LeadWork(business=b, refs=Refs(b), scan=scan, findings=findings, contact=contact,
                         assessment=assessment)
 
@@ -213,22 +281,42 @@ class LocalLeadsAgent:
     def _facts(self, w: LeadWork, inp: TaskInput) -> dict:
         b = w.business
         return {
-            "language": inp.language, "score": w.assessment.score,
+            "language": inp.language_for(b.country_code), "score": w.assessment.score,
             "business": {"name": b.name, "category": b.category, "city": b.city or inp.location.city,
                          "country_code": b.country_code or inp.location.country_code, "website": b.website,
                          "domain": _domain(b.website) if b.website else ""},
             "problems": [{"code": f.code, "title": f.title, "severity": f.severity, "description": f.description}
                          for f in w.findings],
             "estimate": w.estimate.as_facts(), "task_notes": inp.notes[:500],
+            "sales_notes": self._sales_notes(w, inp),
         }
+
+    @staticmethod
+    def _sales_notes(w: LeadWork, inp: TaskInput) -> list[str]:
+        """Market-specific angles for the brief's talking points (Bulgaria pack)."""
+        b = w.business
+        if (b.country_code or inp.location.country_code).upper() != bulgaria.COUNTRY:
+            return []
+        notes = [bulgaria.RECURRING]
+        tip = bulgaria.SEASON_TIPS.get(bulgaria.season(b.city or inp.location.city, b.category))
+        if tip:
+            notes.append(tip)
+        if any(f.code == "PRICES_IN_BGN" for f in w.findings):
+            notes.append(bulgaria.EURO_TIP)
+        if bulgaria.is_mobile(b.phone):
+            notes.append("A mobile number is listed - likely the owner's own line: a short call usually beats "
+                         "e-mail with Bulgarian small businesses.")
+        return notes
 
     def _write(self, qualified: list[LeadWork], inp: TaskInput) -> None:
         if not qualified:
             return
         for w in qualified:
             cms = (w.scan.facts.get("cms", "") if w.scan else "") or ""
-            w.estimate = build_estimate(w.findings, hourly_rate=self.settings.hourly_rate,
-                                        currency=self.settings.currency or "EUR", cms=cms)
+            m = market_for(w.business.country_code or inp.location.country_code)
+            rate = self.settings.hourly_rate or m.hourly_rate
+            currency = self.settings.currency or ("EUR" if self.settings.hourly_rate else m.currency)
+            w.estimate = build_estimate(w.findings, hourly_rate=rate, currency=currency, cms=cms)
         with ThreadPoolExecutor(max_workers=4, thread_name_prefix="write") as pool:
             jobs = []
             for w in qualified:
@@ -293,8 +381,8 @@ class LocalLeadsAgent:
                    "pricing": f"Estimated {est.currency} {est.budget_min:,.0f}-{est.budget_max:,.0f} "
                               f"({est.hours_min}-{est.hours_max} hours)",
                    "call_to_action": "Short call or e-mail with the detailed proposal"},
-            subject=o.data["subject"], body=o.data["body"],
-            language="en" if o.author == "template" else inp.language,
+            subject=_subject(o.data["subject"], b.country_code or inp.location.country_code), body=o.data["body"],
+            language=o.language or inp.language_for(b.country_code),
             approval_summary=(f"First e-mail (step 1) to {w.contact.email} ({w.contact.email_type}) for "
                               f"'{brief.data['title']}'. Score {w.assessment.score}/100.{lb_note} Text by "
                               f"{o.author}{f' ({o.note})' if o.note else ''}."))

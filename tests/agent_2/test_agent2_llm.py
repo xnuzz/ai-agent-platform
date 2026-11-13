@@ -123,8 +123,10 @@ def test_writer_uses_llm_then_falls_back():
     assert w.author == "template" and "LLM unavailable" in w.note
     w = Writer(failing).outreach(FACTS)
     assert w.author == "template" and "validation" in w.note and w.data["subject"]
-    w = Writer(None).outreach({**FACTS, "language": "bg"})
-    assert w.author == "template" and "English (requested language: bg)" in w.note
+    w = Writer(None).outreach({**FACTS, "language": "fr"})
+    assert w.author == "template" and "English (requested language: fr)" in w.note and w.language == "en"
+    w = Writer(None).outreach({**FACTS, "language": "bg"})  # native template, no "English" note
+    assert w.language == "bg" and "English" not in w.note and w.data["body"].startswith("Здравейте, екип на")
 
 
 def test_outreach_rules_signoff_stripped_and_forbidden_content_rejected():
@@ -140,8 +142,15 @@ def test_outreach_rules_signoff_stripped_and_forbidden_content_rejected():
 
 def test_template_outreach_is_plain_and_factual():
     out = Writer(None).outreach(FACTS).data
-    assert out["subject"] == "Browsers mark cornerbakery.test as 'Not secure'"
+    assert out["subject"] == "cornerbakery.test: a few quick wins"
     body = out["body"]
     assert body.startswith("Hello Corner Bakery team,") and "EUR 250-400" in body
     assert "unsubscribe" not in body.lower() and "regards" not in body.lower() and "[" not in body
     assert "- The site is served over plain HTTP (http://cornerbakery.test/)." in body
+
+
+def test_bulgarian_template_never_mixes_a_latin_city_name():
+    facts = {**FACTS, "language": "bg", "business": {**FACTS["business"], "city": "Plovdiv"}}
+    assert "Plovdiv" not in Writer(None).outreach(facts).data["body"]
+    facts["business"]["city"] = "Пловдив"
+    assert "в Пловдив" in Writer(None).outreach(facts).data["body"]
