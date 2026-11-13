@@ -133,7 +133,7 @@ def stream_bundle(batch) -> dict:
             b["campaigns"].append({"ref": f"camp:{key}", "name": f"Website project offer - {name}", "project_brief_ref": f"brief:{key}",
                                    "offer": {"headline": f"Website project for {name}", "value_proposition": "Mock.",
                                              "pricing": "EUR 1,000-2,000", "call_to_action": "Short call"},
-                                   "messages": [{"lead_ref": f"lead:{key}", "subject": f"An idea for {name}", "body": "Hello, ... (mock)"}],
+                                   "messages": [{"lead_ref": f"lead:{key}", "subject": f"Търговско предложение: An idea for {name}", "body": "Hello, ... (mock)"}],
                                    "submit_for_approval": True})
     return {k: v for k, v in b.items() if v or k == "schema_version"}
 

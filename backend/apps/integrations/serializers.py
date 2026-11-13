@@ -1,8 +1,36 @@
+import ipaddress
+import socket
+
+from django.conf import settings
 from rest_framework import serializers
 
 from .models import Integration
 
 SECRET_HINT_KEYS = {"password", "secret", "token", "api_key", "apikey", "key"}
+SMTP_PORTS = {25, 465, 587, 2525}
+
+
+def smtp_config_errors(config: dict) -> list[str]:
+    """SMTP integrations are dialled from the Celery worker: refuse non-SMTP ports and (unless allowed) hosts that
+    resolve to private/loopback/link-local addresses, so a workspace cannot probe the internal network."""
+    errors = []
+    try:
+        if int(config.get("port", 587)) not in SMTP_PORTS:
+            errors.append(f"port must be one of {sorted(SMTP_PORTS)}")
+    except (TypeError, ValueError):
+        errors.append("port must be a number")
+    host = str(config.get("host") or "").strip()
+    if not host:
+        return [*errors, "host is required"]
+    if settings.SMTP_ALLOW_PRIVATE_HOSTS:
+        return errors
+    try:
+        addrs = {ai[4][0] for ai in socket.getaddrinfo(host, None)}
+    except (OSError, UnicodeError):
+        return [*errors, "host does not resolve"]
+    if any(not ipaddress.ip_address(a.split("%")[0]).is_global for a in addrs):
+        errors.append("host resolves to a private or internal address")
+    return errors
 
 
 class IntegrationSerializer(serializers.ModelSerializer):
@@ -22,6 +50,15 @@ class IntegrationSerializer(serializers.ModelSerializer):
         if leaked:
             raise serializers.ValidationError(f"Put credentials in 'secret', not config: {leaked}")
         return value
+
+    def validate(self, attrs):
+        provider = attrs.get("provider", getattr(self.instance, "provider", None))
+        config = attrs.get("config", getattr(self.instance, "config", None)) or {}
+        if provider == "SMTP" and ("config" in attrs or self.instance is None):
+            errors = smtp_config_errors(config)
+            if errors:
+                raise serializers.ValidationError({"config": errors})
+        return attrs
 
     def create(self, validated):
         secret = validated.pop("secret", None)

@@ -59,6 +59,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.common.middleware.MaxRequestSizeMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -107,6 +108,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "media/"  # unset = Django test live server routes every path to its media handler
 
 # --- CORS (Vue dev server / deployed frontend) ---
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
@@ -127,7 +129,19 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
     "DEFAULT_THROTTLE_RATES": {"auth": env("AUTH_THROTTLE_RATE", "20/min"), "public": "30/min", "webhook": "600/min"},
+    # Trusted reverse proxies in front of the app. 0 = use REMOTE_ADDR only, so a client-sent X-Forwarded-For
+    # cannot mint a fresh throttle identity per request. Set to the proxy count when behind nginx/an LB.
+    "NUM_PROXIES": int(env("NUM_PROXIES", "0")),
 }
+# Throttle counters must be shared across gunicorn workers (LocMem is per process => N x the limit).
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+if env_bool("USE_REDIS_CACHE", not DEBUG):
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache",
+                          "LOCATION": env("CACHE_URL", env("REDIS_URL", "redis://localhost:6379/0"))}}
+# Bodies above this are refused before parsing (DRF reads JSON from the stream, bypassing Django's own cap).
+MAX_REQUEST_BYTES = int(env("MAX_REQUEST_BYTES", str(10 * 1024 * 1024)))
+# SMTP integrations may not point at private/loopback/link-local hosts (blind SSRF from the worker) unless allowed.
+SMTP_ALLOW_PRIVATE_HOSTS = env_bool("SMTP_ALLOW_PRIVATE_HOSTS", DEBUG)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(env("JWT_ACCESS_MINUTES", "15"))),

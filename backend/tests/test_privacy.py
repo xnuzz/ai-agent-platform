@@ -29,7 +29,7 @@ def test_export_returns_all_personal_data(api, seeded):
     d = r.json()
     assert d["subject_email"] == EMAIL
     assert d["leads"][0]["contact_email"] == EMAIL and d["leads"][0]["business"] == "Corner Bakery"
-    assert d["outreach_messages"][0]["subject"] == "Your website shows a security warning"
+    assert d["outreach_messages"][0]["subject"] == "Търговско предложение: Your website shows a security warning"
     assert d["businesses_using_this_address"][0]["name"] == "Corner Bakery"
     ev = AuditEvent.objects.get(action="privacy.exported")
     assert EMAIL not in str(ev.metadata) and ev.metadata["subject_ref"] == subject_ref(EMAIL)

@@ -1,4 +1,5 @@
 from django.core import signing
+from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
@@ -84,9 +85,10 @@ class OutreachMessageViewSet(WorkspaceScopedMixin, mixins.ListModelMixin, mixins
     @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):
         """Exclude a message (allowed until it is sent)."""
-        msg = self.get_object()
-        msg.transition_to(MessageStatus.CANCELLED)
-        msg.save(update_fields=["status", "updated_at"])
+        with transaction.atomic():  # row lock: a concurrent send either finishes first (409) or sees CANCELLED
+            msg = OutreachMessage.objects.select_for_update().get(pk=self.get_object().pk)
+            msg.transition_to(MessageStatus.CANCELLED)
+            msg.save(update_fields=["status", "updated_at"])
         record("outreach_message.cancelled", workspace=msg.workspace, actor=Actor.for_user(request.user),
                target=msg)
         return Response(OutreachMessageSerializer(msg).data)

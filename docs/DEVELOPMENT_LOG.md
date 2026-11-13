@@ -4,6 +4,22 @@ Newest first. Each entry: implemented · files · endpoints · DB · deps · tes
 
 ---
 
+## 2026-11-13 — Team 3 (Lead Architect) — Stability + security hardening, BG compliance gate
+
+**Implemented (tested)**
+- **BG commercial-subject gate in the backend (ADR-018):** outreach to a BG lead needs a subject starting "Търговско предложение"/"Търговско съобщение"; checked at launch (`409 compliance_blocked`, reason `commercial_subject_marker_missing`) and again per message at send. Agent 1 now prefixes BG subjects (`saas_research/pipeline/outreach.py::commercial_subject`); Agent 2 already did. Fixtures/e2e seed updated.
+- **Audit fixes** (independent security review, 9 confirmed findings, all fixed with tests in `backend/tests/test_hardening.py`):
+  daily send limit race (quota reserved under a workspace row lock; in-flight `SENDING` counts) · message/campaign cancel vs send race (row locks) · deactivated workspaces no longer send, resume or get tasks claimed · webhook `REPLY` must match our Message-ID (address fallback could mark another workspace's lead REPLIED) · provider errors stored/logged as exception type + SMTP code only (no recipient address); GDPR erasure also clears `error` · ADMIN can no longer demote/remove an OWNER · throttle identity ignores client `X-Forwarded-For` (`NUM_PROXIES`, default 0) and throttle counters use a shared Redis cache when not DEBUG (`USE_REDIS_CACHE`, `CACHE_URL`) · request bodies > `MAX_REQUEST_BYTES` (10 MiB) refused with 413 before parsing · SMTP integrations: ports 25/465/587/2525 only, hosts resolving to private/loopback/link-local refused unless `SMTP_ALLOW_PRIVATE_HOSTS` (default = DEBUG).
+- `/healthz` now checks the database (503 when unreachable).
+- **Windows test failures root-caused (not hidden):** `test_per_host_rate_limit` — the TLS client was built inside the reserved rate-limit slot (~40 ms on Windows), so requests went out late and the next slot early; client now built before the slot, limiter schedules from the slot and uses `perf_counter`. `test_end_to_end` 500 on unsubscribe — `MEDIA_URL` unset made Django's live-server media handler intercept every path (crashes on `:` in signed tokens on Windows); set `MEDIA_URL = "media/"`.
+
+**Files:** `backend/apps/outreach/{services,views,tasks,webhooks}.py`, `backend/apps/{accounts/views,orchestration/services,privacy/services,integrations/serializers}.py`, `backend/apps/common/middleware.py` (new), `backend/config/{settings,settings_test,urls}.py`, `agents/agent_2_local_leads/local_leads/analyzer/fetcher.py`, `agents/agent_1_saas_research/saas_research/pipeline/outreach.py`, tests, `docs/DECISIONS.md` (ADR-018).
+**API/contract:** no endpoint or schema change (`docs/openapi.yaml` regenerated: identical). New compliance reason code, new 413 error code `payload_too_large`, new settings env vars (above).
+**Tests:** full `pytest` on Windows + local Postgres: **247 passed, 0 failed** (incl. the 2 that failed on Windows before; 7 new in `test_hardening.py`, 2 BG-gate, 1 healthz). `npm run build` passes. Playwright e2e and Docker not run (no Docker daemon).
+**Not done / blocked:** КЗП opt-out register import — no public download found (kzp.bg offers only a per-address check form; registration is by legal entities) → needs a product decision. Legal wording of ЗЕТ чл. 6 not re-confirmed (lex.bg fetch failed); counsel review needed. Agent 2 scoring confidence/value model not changed this session.
+
+---
+
 ## 2026-11-11 — Team 2 — Agent 2: Bulgaria market pack
 
 **Implemented** (`local_leads/bulgaria.py` + wiring): small-business filter (chains/brands out), Bulgarian category words and 18 default BG niches, owner-run mobile ranking, +359 phone normalisation; new codes `SOCIAL_MEDIA_ONLY`, `FREE_SUBDOMAIN`, BG-only `PRICES_IN_BGN` (euro-only since 2026-08-08), `MISSING_COMPANY_INFO` (ЗЕТ чл. 4), `NO_PRIVACY_POLICY`; windows-1251 detection and `<meta>` charset decoding; Bulgarian booking words; ЗЕТ чл. 6 compliance (subject "Търговско предложение:", "без ДДС", КЗП register note, free-mail → UNKNOWN); BG sales notes in briefs (recurring revenue, season timing, euro update); Facebook pages no longer deduped by domain nor sent as the business website; OSM categories grouped 4 per query.

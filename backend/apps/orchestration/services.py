@@ -71,7 +71,7 @@ def claim_task(token: AgentToken, *, worker_id: str, task_types: list[str] | Non
     now = timezone.now()
     with transaction.atomic():
         qs = ResearchTask.objects.select_for_update(skip_locked=True).filter(
-            agent=token.agent, status=TaskStatus.QUEUED, cancel_requested=False)
+            agent=token.agent, status=TaskStatus.QUEUED, cancel_requested=False, workspace__is_active=True)
         if task_types:
             qs = qs.filter(task_type__in=task_types)
         task = qs.order_by("-priority", "created_at").first()

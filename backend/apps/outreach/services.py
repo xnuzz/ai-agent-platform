@@ -26,6 +26,10 @@ from .models import Campaign, OutreachMessage, SuppressionEntry
 logger = logging.getLogger(__name__)
 UNSUBSCRIBE_SALT = "outreach.unsubscribe.v1"
 PENDING_MESSAGE_STATES = [MessageStatus.DRAFT, MessageStatus.WAITING_FOR_APPROVAL, MessageStatus.APPROVED]
+# Recipient country -> accepted subject prefixes marking an unsolicited e-mail as commercial (case-insensitive).
+# BG: meant to keep unsolicited commercial e-mail identifiable as such (ЗЕТ чл. 6). Conservative platform convention,
+# NOT a validated legal reading — see docs/DECISIONS.md ADR-018.
+COMMERCIAL_SUBJECT_MARKERS = {"BG": ("търговско предложение", "търговско съобщение")}
 
 
 # ---------------------------------------------------------------- suppression
@@ -114,6 +118,9 @@ def assert_campaign_launchable(campaign: Campaign) -> None:
         errors.append("project_brief_not_approved")
     if not campaign.workspace.sender_identity_complete:
         errors.append("sender_identity_incomplete")
+    approved = campaign.messages.filter(status=MessageStatus.APPROVED).select_related("lead__business")
+    if any(commercial_marker_missing(m) for m in approved):
+        errors.append("commercial_subject_marker_missing")  # caught before launch, not as FAILED sends
     if errors:
         raise ComplianceBlocked("Campaign cannot be launched.", details={"reasons": errors})
 
@@ -141,7 +148,7 @@ def set_campaign_status(campaign: Campaign, new_status: str, actor: Actor) -> Ca
     campaign.transition_to(new_status)
     campaign.save(update_fields=["status", "updated_at"])
     if new_status == CampaignStatus.CANCELLED:
-        for msg in campaign.messages.filter(status__in=PENDING_MESSAGE_STATES):
+        for msg in campaign.messages.select_for_update().filter(status__in=PENDING_MESSAGE_STATES):
             msg.transition_to(MessageStatus.CANCELLED)
             msg.save(update_fields=["status", "updated_at"])
     record(f"campaign.{new_status.lower()}", workspace=campaign.workspace, actor=actor, target=campaign)
@@ -149,6 +156,11 @@ def set_campaign_status(campaign: Campaign, new_status: str, actor: Actor) -> Ca
 
 
 # ---------------------------------------------------------------- sending
+
+def commercial_marker_missing(msg: OutreachMessage) -> bool:
+    markers = COMMERCIAL_SUBJECT_MARKERS.get((msg.lead.business.country_code or "").upper())
+    return bool(markers) and not (msg.subject or "").strip().lower().startswith(markers)
+
 
 def compliance_errors(msg: OutreachMessage) -> list[str]:
     ws, lead = msg.workspace, msg.lead
@@ -165,12 +177,17 @@ def compliance_errors(msg: OutreachMessage) -> list[str]:
     required = {c.upper() for c in (ws.consent_required_countries or [])}
     if country in required and lead.legal_basis != LegalBasis.CONSENT:
         errors.append("consent_required")
+    if commercial_marker_missing(msg):
+        errors.append("commercial_subject_marker_missing")
     return errors
 
 
-def _sent_today(workspace) -> int:
+def _used_today(workspace) -> int:
+    """Daily quota used: SENT today plus in-flight SENDING (a stuck SENDING may have gone out)."""
     start = datetime.combine(timezone.now().date(), time.min, tzinfo=dt_timezone.utc)
-    return OutreachMessage.objects.filter(workspace=workspace, status=MessageStatus.SENT, sent_at__gte=start).count()
+    return OutreachMessage.objects.filter(
+        Q(status=MessageStatus.SENT, sent_at__gte=start) | Q(status=MessageStatus.SENDING, updated_at__gte=start),
+        workspace=workspace).count()
 
 
 def _email_connection(workspace):
@@ -210,7 +227,8 @@ def send_message(message_id) -> str:
     with transaction.atomic():
         msg = (OutreachMessage.objects.select_for_update(of=("self",))
                .select_related("campaign", "lead", "lead__business", "workspace").get(pk=message_id))
-        if msg.status != MessageStatus.APPROVED or msg.campaign.status != CampaignStatus.ACTIVE:
+        if (msg.status != MessageStatus.APPROVED or msg.campaign.status != CampaignStatus.ACTIVE
+                or not msg.workspace.is_active):
             return "skipped"
         if not msg.approved_hash or msg.compute_hash() != msg.approved_hash:
             return _fail(msg, actor, "content_changed_after_approval")
@@ -222,6 +240,12 @@ def send_message(message_id) -> str:
         errors = compliance_errors(msg)
         if errors:
             return _fail(msg, actor, "compliance_blocked", errors)
+        # Reserve quota under a workspace row lock so concurrent batches cannot overrun daily_send_limit.
+        from apps.accounts.models import Workspace
+
+        ws = Workspace.objects.select_for_update().get(pk=msg.workspace_id)
+        if _used_today(ws) >= ws.daily_send_limit:
+            return "deferred"  # stays APPROVED; resume_active_campaigns retries tomorrow
         msg.transition_to(MessageStatus.SENDING)
         msg.save(update_fields=["status", "updated_at"])
 
@@ -229,11 +253,14 @@ def send_message(message_id) -> str:
         email = build_email(msg, connection=_email_connection(msg.workspace))
         email.send(fail_silently=False)
     except Exception as exc:  # noqa: BLE001 - provider errors are recorded, never retried blindly
-        logger.warning("Outreach send failed for %s: %s", msg.pk, exc)
+        # Never store/log str(exc): SMTP errors echo recipient addresses and internal hosts.
+        smtp_code = getattr(exc, "smtp_code", None)
+        summary = type(exc).__name__ + (f" (SMTP {smtp_code})" if smtp_code else "")
+        logger.warning("Outreach send failed for %s: %s", msg.pk, summary)
         with transaction.atomic():
             msg.refresh_from_db()
             msg.status = MessageStatus.FAILED
-            msg.error = {"code": "provider_error", "message": str(exc)[:500]}
+            msg.error = {"code": "provider_error", "message": summary}
             msg.save(update_fields=["status", "error", "updated_at"])
             record("outreach_message.failed", workspace=msg.workspace, actor=actor, target=msg,
                    metadata=msg.error)
@@ -265,13 +292,17 @@ def run_campaign_batch(campaign_id) -> dict:
     campaign = Campaign.objects.select_related("workspace").get(pk=campaign_id)
     if campaign.status != CampaignStatus.ACTIVE:
         return {"status": campaign.status, "sent": 0}
-    remaining = max(campaign.workspace.daily_send_limit - _sent_today(campaign.workspace), 0)
+    if not campaign.workspace.is_active:
+        return {"status": "workspace_inactive", "sent": 0}
+    remaining = max(campaign.workspace.daily_send_limit - _used_today(campaign.workspace), 0)
     ids = list(campaign.messages.filter(status=MessageStatus.APPROVED).order_by("created_at")
                .values_list("id", flat=True)[:remaining])
     results = {}
     for mid in ids:
         outcome = send_message(mid)
         results[outcome] = results.get(outcome, 0) + 1
+        if outcome == "deferred":
+            break
     if not campaign.messages.filter(status__in=[MessageStatus.APPROVED, MessageStatus.SENDING]).exists():
         with transaction.atomic():
             c = Campaign.objects.select_for_update().get(pk=campaign_id)

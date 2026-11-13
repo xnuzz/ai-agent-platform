@@ -69,6 +69,16 @@ def draft_offer(llm: LLMProvider, req: CustomerRequest) -> OfferDraft:
                       call_to_action=truncate(squash(offer.call_to_action), 500))
 
 
+# The backend refuses to launch/send BG outreach whose subject lacks this marker (ЗЕТ чл. 6 convention, ADR-018).
+BG_SUBJECT_PREFIX = "Търговско предложение"
+
+
+def commercial_subject(subject: str, country_code: str) -> str:
+    if (country_code or "").upper() != "BG" or subject.lower().startswith(("търговско предложение", "търговско съобщение")):
+        return subject
+    return truncate(f"{BG_SUBJECT_PREFIX}: {subject}", 300)
+
+
 def draft_messages(llm: LLMProvider, req: CustomerRequest, offer: OfferDraft, leads: list[Candidate], *,
                    batch_size: int = 10, on_batch=None) -> list[DraftMessage]:
     out: list[DraftMessage] = []
@@ -93,6 +103,7 @@ def draft_messages(llm: LLMProvider, req: CustomerRequest, offer: OfferDraft, le
                 logger.info("dropping empty draft for %s", d.lead_id)
                 continue
             done.add(d.lead_id)
+            subject = commercial_subject(subject, c.country_code)
             out.append(DraftMessage(lead_ref=c.lead_ref, subject=subject, body=body, language=req.language))
         missing = set(ids) - done
         if missing:

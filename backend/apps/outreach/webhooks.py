@@ -42,13 +42,17 @@ def verify_signature(raw_body: bytes, timestamp: str, signature: str, now: float
 
 
 def _messages_for(event) -> list[OutreachMessage]:
-    """Our Message-ID identifies the exact message; otherwise every message sent to that address."""
+    """Our Message-ID identifies the exact message; otherwise every message sent to that address (suppression
+    only — over-suppressing is safe). A REPLY must match a Message-ID: an address match could mark another
+    workspace's lead as REPLIED."""
     qs = OutreachMessage.objects.select_related("workspace", "lead")
     if event.get("message_id"):
         found = list(qs.filter(provider_message_id=event["message_id"]))
         if found:
             return found
     email = normalize_email(event.get("email"))
+    if event["type"] == "REPLY":
+        return []
     return list(qs.filter(to_email__iexact=email).exclude(sent_at=None)) if email else []
 
 

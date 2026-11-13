@@ -50,3 +50,15 @@ def test_openapi_schema_served(api):
     from rest_framework.test import APIClient
 
     assert APIClient().get("/api/schema/").status_code == 200
+
+
+def test_healthz_reports_database(client, monkeypatch):
+    assert client.get("/healthz").json() == {"status": "ok", "database": "ok"}
+    from django.db import DatabaseError, connection
+
+    def broken():
+        raise DatabaseError("down")
+
+    monkeypatch.setattr(connection, "cursor", broken)
+    r = client.get("/healthz")
+    assert r.status_code == 503 and r.json()["database"] == "unavailable"

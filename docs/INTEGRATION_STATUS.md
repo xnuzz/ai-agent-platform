@@ -1,6 +1,6 @@
 # Integration Status
 
-**Last updated:** 2026-11-09 · Frontend redesign session · Contract version: API v1 / Result Bundle 1.0 (unchanged)
+**Last updated:** 2026-11-13 · Team 3 stability/security session · Contract version: API v1 / Result Bundle 1.0 (unchanged)
 Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not implemented · ⛔ Blocked
 
 ## Main platform (Team 3)
@@ -13,12 +13,13 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Lease expiry reaper (beat + on claim) | ✅ | |
 | Result Bundle ingestion (all 7 sections, refs, dedup, idempotency) | ✅ | |
 | Approvals: request (agent/user), decide (user), hash pinning, auto customer-research | ✅ | |
-| Campaign launch/pause/cancel + compliance gates | ✅ | |
-| Email send pipeline (Celery), footer, List-Unsubscribe, daily limit | ✅ | Transport: SMTP Integration or Django backend |
+| Campaign launch/pause/cancel + compliance gates | ✅ | 2026-11-13: BG commercial-subject marker gate at launch + send (ADR-018); deactivated workspaces stop sending/claiming |
+| Email send pipeline (Celery), footer, List-Unsubscribe, daily limit | ✅ | Transport: SMTP Integration or Django backend. 2026-11-13: daily limit race-free (workspace lock, SENDING counts); cancel vs send locked; provider errors stored without addresses |
 | Suppression list + public unsubscribe (API + page) | ✅ | |
-| Integrations (encrypted write-only secrets) | ✅ | Connection "verify" ⬜ |
+| Integrations (encrypted write-only secrets) | ✅ | Connection "verify" ⬜. SMTP host/port validated (no private hosts unless `SMTP_ALLOW_PRIVATE_HOSTS`) |
 | Audit log (append-only) | ✅ | |
 | Dashboard summary API | ✅ | |
+| `/healthz` checks DB (503 on failure); 413 for bodies > `MAX_REQUEST_BYTES`; throttles ignore client X-Forwarded-For (`NUM_PROXIES`), shared Redis cache when not DEBUG | ✅ | 2026-11-13; Redis cache path not exercised here (tests use LocMem) |
 | OpenAPI schema + generated TS types | ✅ | `docs/openapi.yaml`, `frontend/src/api/schema.d.ts` |
 | `agents/platform_sdk` (client + worker + keepalive) | ✅ | Used by E2E tests |
 | Vue: login/register, dashboard, tasks (both agents), task detail, approval center, ideas, leads+briefs, campaigns+messages, suppression, settings, unsubscribe | ✅ | Browser smoke-tested (Playwright) |
@@ -94,7 +95,7 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | Compose service `agent2` | ⛔ | Commented snippet in the agent README; needs Team 3 (see Requests) |
 | Follow-ups (step > 1), reply handling, per-workspace LLM keys | ⬜ | Blocked on platform v2 (ADR-008) / Team 3 |
 
-**Tests:** `tests/agent_2/` (62 + live contract test; `test_agent2_analyzer.py::test_per_host_rate_limit` is timing-flaky on Windows, fails without these changes too; analyzer, discovery, LLM, scoring/briefs, handler bundle conformance against the backend `ResultBundle` serializer, live-server contract test). Full `pytest`: 111 passed.
+**Tests:** `tests/agent_2/` (62 + live contract test; `test_per_host_rate_limit` Windows flake **fixed 2026-11-13** (root cause in the fetcher, not the test); analyzer, discovery, LLM, scoring/briefs, handler bundle conformance against the backend `ResultBundle` serializer, live-server contract test). Full `pytest`: 111 passed.
 
 ## Requests to Team 3 (agent teams append here)
 | Date | From | Request | Status |
@@ -105,7 +106,7 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | 2026-11-09 | Team 2 | Add compose service `agent2` to `docker-compose.yml` (snippet in `agents/agent_2_local_leads/README.md` §Setup; build `agents/agent_2_local_leads/Dockerfile` with repo-root context). Also add `DISCOVERY_PROVIDER`, `GOOGLE_PLACES_API_KEY`, `CRAWLER_INFO_URL` to `.env.example` (agent section). | **Done** 2026-11-09 — profile `agents`, default discovery `osm` (no key), env defaults so the base stack starts; untested (no Docker daemon) |
 | 2026-11-09 | Team 2 | CI (`.github/workflows/ci.yml`): also `pip install anthropic>=2.6,<3` (or `pip install -e agents/platform_sdk -e agents/agent_2_local_leads[test]`). Without it the 13 tests in `tests/agent_2/test_agent2_llm.py` are skipped (`importorskip`); all other Agent 2 tests run with backend deps only. `pytest.ini` needs **no** change (`tests/agent_2/conftest.py` adjusts `sys.path`). | **Done** 2026-11-09 — CI installs `-e agents/agent_2_local_leads` (pulls `anthropic`) |
 | 2026-11-09 | Team 2 | FYI: the Business dedupe key uses the hostname only (port ignored), so sites differing only by port collapse into one Business. Harmless in production; Agent 2 tests use distinct loopback IPs. No change required. | **Acknowledged** — intended: one business per host; no change |
-| 2026-11-11 | Team 2 | **BG compliance in the backend:** (1) validate that outreach to BG leads keeps a subject starting with "Търговско предложение" (ЗЕТ чл. 6, ал. 1) so a reviewer edit cannot drop it; (2) a way to import the КЗП register of opted-out e-mail addresses into workspace suppression. Agent 2 adds the prefix and a note today. | Open |
+| 2026-11-11 | Team 2 | **BG compliance in the backend:** (1) validate that outreach to BG leads keeps a subject starting with "Търговско предложение" (ЗЕТ чл. 6, ал. 1) so a reviewer edit cannot drop it; (2) a way to import the КЗП register of opted-out e-mail addresses into workspace suppression. Agent 2 adds the prefix and a note today. | (1) **Done** 2026-11-13 (ADR-018; launch + send gate). (2) ⛔ **Blocked:** no public download of the КЗП register found (kzp.bg has only a per-address check form) — owner decision needed |
 | 2026-11-09 | Agent 2 dashboard (UI) | **Pause/resume research:** `POST research-tasks/{id}/pause|resume/` + a `pause_requested` flag in the heartbeat response + SDK/agent support (stop at checkpoint, resume from last batch). The dashboard shows disabled Pause/Resume until this exists. | Open |
 | 2026-11-09 | Agent 2 dashboard (UI) | **Push events:** an SSE endpoint (e.g. `GET events/?workspace=…`) emitting `research.started/progress/completed/failed`, `business.discovered/updated/qualified`. Only `features/localFinder/liveFeed.ts` would change. | Open (polling works meanwhile) |
 | 2026-11-09 | Agent 2 dashboard (UI) | **Lead filters:** `ordering=updated_at` / `updated_after=` on `leads/` (cheaper incremental polling) and a `business__first_seen_task` filter so businesses re-discovered by a run (existing leads keep their first `research_task`) can be shown in that run's scope. | Open |
@@ -121,18 +122,22 @@ Legend: ✅ Implemented (tested) · 🟡 Partial · 🧪 Mocked · ⬜ Not imple
 | 2026-11-09 | New: `privacy/export`, `privacy/erase`, `webhooks/email-events`, `Workspace.data_retention_days` | No | Team 3 |
 | 2026-11-09 | Frontend visual redesign (ADR-017): tokens + glass components, new dependency `@fontsource-variable/inter`. No API/schema change | No | Team 3 (frontend conventions) |
 | 2026-11-09 | Frontend: new route `/local-finder` (Agent 2 dashboard) using existing endpoints only; documented the scan-fact keys and fields the dashboard reads (`AGENT_2_CONTRACT.md` › dashboard). No API/schema change, OpenAPI unchanged | No | Team 2 (keep fact keys stable), Team 3 |
+| 2026-11-13 | Backend: new compliance reason `commercial_subject_marker_missing` (BG, ADR-018); new error `413 payload_too_large`; Agent 1 prefixes BG subjects. No schema change | No (agents already prefix) | Team 1, Team 2, frontend shows reasons verbatim |
 | 2026-11-09 | Team 2: new Agent 2 problem codes `WEBSITE_UNREACHABLE`, `NO_HTTPS_REDIRECT`, `SSL_INVALID_CERTIFICATE`, `SSL_EXPIRING_SOON`, `MIXED_CONTENT` (`AGENT_2_CONTRACT.md`). Additive; backend accepts any `UPPER_SNAKE` code, frontend shows codes verbatim | No | Frontend (display only) |
 
 ## Known issues / risks
 - Local Business Finder: tile rendering unverified (see above); MapLibre adds ~300 kB gzip, loaded only on `/local-finder` (own chunk); its worker is served as `assets/maplibre-gl-worker-*.mjs` — the static server must send a JavaScript MIME type for `.mjs`.
 - Redesign: `backdrop-filter` on many glass cards can cost GPU time on low-end devices; the star field is static (no animation loop) to keep re-blurs rare. Basemap tiles are still unverified here (host blocked).
 - Local Business Finder loads at most 1,000 Agent 2 leads (10 pages); a notice is shown when truncated.
-- A message can remain `SENDING` if the worker dies mid-SMTP call (by design: at-most-once). No UI to resolve yet.
+- A message can remain `SENDING` if the worker dies mid-SMTP call (by design: at-most-once). No UI to resolve yet; it counts against the daily limit.
+- ЗЕТ чл. 6 subject wording is a platform convention pending counsel review (ADR-018).
 - `LeadSerializer.is_suppressed` costs one query per lead (OK at page_size ≤100).
 - Task claiming is FIFO across workspaces; no per-workspace fairness or quotas yet.
 - No throttling on agent endpoints (tokens are trusted service credentials).
 
 ## Next steps — Team 3 (in order)
+2026-11-13: full `pytest` 247 passed / 0 failed on Windows + Postgres; `npm run build` passes; Playwright + Docker not run this session.
+0. Owner decisions: КЗП register handling (no public export found); counsel review of the BG subject marker (ADR-018). Commit the working tree on the team branches.
 Done 2026-11-09: GitHub + PR #1 merged (green CI) · Team 1/2 merged, requests resolved · browser e2e suite in CI · GDPR export/erasure/retention · email-events webhook · httpOnly-cookie auth + password reset.
 1. ⛔ `docker compose up` end-to-end and fix Dockerfiles — needs a machine with Docker (none in the dev container).
 2. Choose an email provider (SES / Mailgun / Postmark) → write its adapter for `webhooks/email-events` and its SMTP/API sender.

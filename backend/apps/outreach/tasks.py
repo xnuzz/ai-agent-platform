@@ -15,7 +15,8 @@ def resume_active_campaigns() -> int:
     """Picks up ACTIVE campaigns that stopped on the daily send limit."""
     from .models import Campaign
 
-    ids = list(Campaign.objects.filter(status=CampaignStatus.ACTIVE).values_list("id", flat=True))
+    ids = list(Campaign.objects.filter(status=CampaignStatus.ACTIVE, workspace__is_active=True)
+               .values_list("id", flat=True))
     for cid in ids:
         send_campaign_batch.delay(str(cid))
     return len(ids)

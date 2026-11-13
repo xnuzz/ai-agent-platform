@@ -77,8 +77,8 @@ def _anonymize_lead(lead: Lead) -> None:
 
 
 def _redact_message(msg: OutreachMessage) -> None:
-    msg.to_email, msg.subject, msg.body = "", REDACTED, REDACTED
-    msg.save(update_fields=["to_email", "subject", "body", "updated_at"])
+    msg.to_email, msg.subject, msg.body, msg.error = "", REDACTED, REDACTED, {}
+    msg.save(update_fields=["to_email", "subject", "body", "error", "updated_at"])
 
 
 @transaction.atomic

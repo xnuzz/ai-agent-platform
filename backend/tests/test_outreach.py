@@ -3,7 +3,7 @@ from django.core import mail
 
 from apps.accounts.models import Workspace
 from apps.approvals.models import Approval
-from apps.leads.models import Lead
+from apps.leads.models import Business, Lead
 from apps.outreach.models import OutreachMessage, SuppressionEntry
 from apps.outreach.services import make_unsubscribe_token
 from support.factories import customer_bundle, local_leads_bundle
@@ -150,3 +150,27 @@ def test_lead_never_contacted_twice_if_disqualified(api, local_pending, django_c
     Lead.objects.update(status="DISQUALIFIED")
     _launch(api, rep["refs"]["campaigns"]["c1"], django_capture_on_commit_callbacks)
     assert OutreachMessage.objects.get().error["reasons"] == ["lead_not_contactable"]
+
+
+def test_bg_commercial_subject_marker_enforced(api, local_pending, django_capture_on_commit_callbacks):
+    approvals, rep = local_pending
+    for a in approvals.values():
+        _decide(api, a["approval_id"])
+    cid = rep["refs"]["campaigns"]["c1"]
+    OutreachMessage.objects.update(subject="Your website shows a security warning")  # marker dropped
+    r = api.post(f"/api/v1/campaigns/{cid}/launch/")
+    assert r.status_code == 409
+    assert r.json()["error"]["details"]["reasons"] == ["commercial_subject_marker_missing"]
+    assert mail.outbox == []
+
+
+def test_bg_marker_checked_again_at_send_time():
+    from apps.outreach.services import commercial_marker_missing
+
+    msg = OutreachMessage(subject="  търговско съобщение: оферта")
+    msg.lead = Lead(business=Business(country_code="bg"))
+    assert commercial_marker_missing(msg) is False
+    msg.subject = "Оферта за уебсайт"
+    assert commercial_marker_missing(msg) is True
+    msg.lead.business.country_code = "DE"
+    assert commercial_marker_missing(msg) is False

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db import DatabaseError, connection
 from django.http import JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -22,7 +23,13 @@ from apps.research.views import EvidenceViewSet, OpportunityViewSet, SoftwareIde
 
 
 def healthz(request):
-    return JsonResponse({"status": "ok"})
+    """Liveness + DB readiness for load balancers/compose: 503 when the database is unreachable."""
+    try:
+        with connection.cursor() as cur:
+            cur.execute("SELECT 1")
+    except DatabaseError:
+        return JsonResponse({"status": "error", "database": "unavailable"}, status=503)
+    return JsonResponse({"status": "ok", "database": "ok"})
 
 
 router = DefaultRouter()

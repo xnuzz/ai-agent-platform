@@ -45,7 +45,7 @@ def customer_bundle(submit=True, legal_basis="LEGITIMATE_INTEREST", email="info@
         "campaigns": [
             {"ref": "c1", "name": "ChairFill pilot - Sofia",
              "offer": {"headline": "Fill cancelled slots automatically", "call_to_action": "15-min call?"},
-             "messages": [{"lead_ref": "l1", "subject": "Cancelled appointments at Smile Dental",
+             "messages": [{"lead_ref": "l1", "subject": "Търговско предложение: Cancelled appointments at Smile Dental",
                            "body": "Hi Smile Dental team, ..."}],
              "submit_for_approval": submit},
         ],
@@ -80,7 +80,7 @@ def local_leads_bundle(submit=True):
         ],
         "campaigns": [
             {"ref": "c1", "name": "Corner Bakery website offer", "project_brief_ref": "pb1",
-             "messages": [{"lead_ref": "l1", "subject": "Your website shows a security warning",
+             "messages": [{"lead_ref": "l1", "subject": "Търговско предложение: Your website shows a security warning",
                            "body": "Hello Corner Bakery, ..."}],
              "submit_for_approval": submit},
         ],

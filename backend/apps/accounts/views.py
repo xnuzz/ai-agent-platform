@@ -105,6 +105,7 @@ class MembershipViewSet(
                target=m, metadata={"role": m.role, "user_id": str(user.id)})
 
     def perform_update(self, serializer):
+        self._guard_role(serializer.instance.role)  # cannot change someone ranked above you
         self._guard_role(serializer.validated_data.get("role", serializer.instance.role))
         self._guard_last_owner(serializer.instance, serializer.validated_data.get("role"))
         m = serializer.save()
@@ -112,13 +113,14 @@ class MembershipViewSet(
                target=m, metadata={"role": m.role})
 
     def perform_destroy(self, instance):
+        self._guard_role(instance.role)  # cannot remove someone ranked above you
         self._guard_last_owner(instance, None)
         record("membership.deleted", workspace=self.request.workspace, actor=Actor.for_user(self.request.user),
                target=instance, metadata={"user_id": str(instance.user_id)})
         instance.delete()
 
     def _guard_role(self, role):
-        # Admins cannot grant a role above their own.
+        # Admins cannot grant, change or remove a role above their own.
         if ROLE_RANK[role] > ROLE_RANK[self.request.membership.role]:
             from rest_framework.exceptions import PermissionDenied
 
